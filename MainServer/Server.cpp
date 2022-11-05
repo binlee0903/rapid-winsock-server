@@ -20,7 +20,7 @@ Server::~Server()
 	{
 		if (i != 0)
 		{
-			
+			closeSocket(i);
 		}
 	}
 
@@ -28,9 +28,17 @@ Server::~Server()
 	{
 		printSocketError();
 	}
+
+	delete mServer;
 }
 
-void Server::OpenSocket()
+void Server::Run()
+{
+
+
+}
+
+void Server::openSocket()
 {
 	if (socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) != 0)
 	{
@@ -38,7 +46,7 @@ void Server::OpenSocket()
 	}
 }
 
-void Server::CloseSocket(SOCKET socket)
+void Server::closeSocket(SOCKET socket)
 {
 	if (closesocket(socket) != 0)
 	{
@@ -46,10 +54,20 @@ void Server::CloseSocket(SOCKET socket)
 	}
 }
 
+Server* Server::GetServer()
+{
+	if (mServer == nullptr)
+	{
+		mServer = new Server();
+	}
+
+	return mServer;
+}
+
 void Server::printSocketError()
 {
 	wchar_t* msg = nullptr;
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
+	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
 		LANG_SYSTEM_DEFAULT, msg, 0, nullptr);
 
 	if (msg != nullptr)

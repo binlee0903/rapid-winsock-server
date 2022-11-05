@@ -7,16 +7,22 @@
 class Server
 {
 public:
-	Server();
 	~Server();
 
-	void OpenSocket();
-	void CloseSocket(SOCKET socket);
+	void Run();
+
+	static Server* GetServer();
 
 private:
+	Server();
+
+	void openSocket();
+	void closeSocket(SOCKET socket);
 	void printSocketError();
 
 private:
+	static Server* mServer;
+
 	WSADATA* mWsaData;
 	std::vector<SOCKET> mSockets;
 };
