@@ -14,43 +14,7 @@ int32_t main()
 {
 	Server& server = *Server::GetServer();
 
-	server.Run();
-
-	WSADATA wsaData;
-
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData))
-	{
-		std::cout << L"Socket start up Failed(Server constructor)" << std::endl;
-
-		return 0;
-	}
-
-	SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
-	SOCKET returnValue = 0;
-
-	if (listenSocket == INVALID_SOCKET)
-	{
-		return 0;
-	}
-
-	sockaddr_in serverAddr;
-	ZeroMemory(&serverAddr, sizeof(sockaddr_in));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(80);
-
-	returnValue = bind(listenSocket, (sockaddr*)&serverAddr, sizeof(sockaddr_in));
-
-	if (returnValue == SOCKET_ERROR)
-	{
-		return 0;
-	}
-
-	returnValue = listen(listenSocket, SOMAXCONN);
-	if (returnValue == SOCKET_ERROR)
-	{
-		return 0;
-	}
+	return server.Run();
 
 	uint32_t clientSocket = 0;
 	sockaddr_in clientAddr;

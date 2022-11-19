@@ -2,47 +2,115 @@
 
 Server::Server()
 	: mWsaData(nullptr)
-	, mSockets(0)
+	, mThreadHandles(0)
 {
-	mSockets.reserve(100);
+	mThreadHandles.reserve(100);
+	mConnectionCount = 0;
+	mSocket = 0;
 
-	if (WSAStartup(MAKEWORD(2, 2), mWsaData))
+	ZeroMemory(&mServerAddr, sizeof(sockaddr_in));
+	mServerAddr.sin_family = AF_INET;
+	mServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	mServerAddr.sin_port = htons(PORT_NUMBER);
+
+	int result = WSAStartup(MAKEWORD(2, 2), mWsaData);
+
+	assert(result == 0);
+
+	if (result != 0)
 	{
 		std::cout << L"Socket start up Failed(Server constructor)" << std::endl;
 
 		return;
 	}
+
+	std::cout << L"Vender info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
 }
 
 Server::~Server()
 {
-	for (auto i : mSockets)
-	{
-		if (i != 0)
-		{
-			closeSocket(i);
-		}
-	}
+	int result = WSACleanup();
 
-	if (WSACleanup() != 0)
+	assert(result == 0);
+
+	if (result != 0)
 	{
 		printSocketError();
 	}
-
-	delete mServer;
 }
 
-void Server::Run()
+int32_t Server::Run()
 {
+	openSocket();
+
+	int32_t returnValue = 0;
+	returnValue = bind(mSocket, (sockaddr*)&mServerAddr, sizeof(sockaddr_in));
+
+	assert(returnValue != SOCKET_ERROR);
+	if (returnValue == SOCKET_ERROR)
+	{
+		printSocketError();
+		return 0;
+	}
+
+	returnValue = listen(mSocket, MAX_CONNECTION_COUNT);
+	if (returnValue == SOCKET_ERROR)
+	{
+		printSocketError();
+		return 0;
+	}
+
+	SOCKET clientSocket = NULL;
+	sockaddr_in clientSockAddr;
+	int32_t addrLen = sizeof(sockaddr_in);
+	wchar_t buffer[MAX_SOCKET_BUFFER_SIZE];
+
+	while (mConnectionCount < MAX_CONNECTION_COUNT)
+	{
+		clientSocket = accept(mSocket, (sockaddr*)&clientSockAddr, &addrLen);
+
+		if (clientSocket == INVALID_SOCKET)
+		{
+			printSocketError();
+			return 0;
+		}
+
+		wchar_t clientAddr[INET_ADDRSTRLEN];
+		InetNtopW(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr));
+
+		std::cout << L"Client IP : " << clientAddr << std::endl;
 
 
+
+	}
+
+	return 0;
+}
+
+void Server::Terminate()
+{
+	delete this;
 }
 
 void Server::openSocket()
 {
-	if (socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) != 0)
+	SOCKET tempSocket = NULL;
+	tempSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	assert(tempSocket == 0);
+	assert(mSocket == 0);
+
+	if (tempSocket == INVALID_SOCKET)
 	{
 		printSocketError();
+	}
+	else if (mSocket == 0)
+	{
+		mSocket = tempSocket;
+	}
+	else
+	{
+		std::cout << L"Server.cpp openSocket() attempted open socket twice" << std::endl;
 	}
 }
 
@@ -74,4 +142,5 @@ void Server::printSocketError()
 	{
 		std::cout << msg << std::endl;
 	}
+	LocalFree(msg);
 }
