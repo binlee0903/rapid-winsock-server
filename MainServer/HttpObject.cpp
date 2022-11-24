@@ -12,7 +12,7 @@ HttpObject::~HttpObject()
 
 void HttpObject::SetHttpMethod(std::wstring&& httpMethod)
 {
-	mHttpMethod = httpMethod;
+	mHttpMethod = std::move(httpMethod);
 	httpMethod = nullptr;
 }
 

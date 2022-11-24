@@ -4,6 +4,7 @@
 #include <ws2tcpip.h>
 #include <iostream>
 #include <vector>
+#include <process.h>
 
 #include <cstdint>
 #include <cassert>
@@ -26,6 +27,8 @@ private:
 	Server();
 	~Server();
 
+    static DWORD processClient(void* clientSocket);
+
 	void openSocket();
 	void closeSocket(SOCKET socket);
 	void printSocketError();
@@ -34,11 +37,9 @@ private:
 	static Server* mServer;
 	static uint32_t mConnectionCount;
 	static SOCKET mSocket;
+    static std::vector<HANDLE> mThreadHandles;
 
 	sockaddr_in mServerAddr;
-
 	WSADATA* mWsaData;
-	std::vector<HANDLE> mThreadHandles;
-
 };
 

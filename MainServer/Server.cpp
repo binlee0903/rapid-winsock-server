@@ -2,7 +2,6 @@
 
 Server::Server()
 	: mWsaData(nullptr)
-	, mThreadHandles(0)
 {
 	mThreadHandles.reserve(100);
 	mConnectionCount = 0;
@@ -24,7 +23,7 @@ Server::Server()
 		return;
 	}
 
-	std::cout << L"Vender info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
+	std::cout << L"Vendor info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
 }
 
 Server::~Server()
@@ -78,11 +77,16 @@ int32_t Server::Run()
 		wchar_t clientAddr[INET_ADDRSTRLEN];
 		InetNtopW(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr));
 
-		std::cout << L"Client IP : " << clientAddr << std::endl;
+		std::cout << L"Client IP : " << clientAddr << L"Client Num : " << mConnectionCount << std::endl;
 
+        HANDLE threadHandle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
+                                                                      reinterpret_cast<_beginthreadex_proc_type>(Server::processClient),
+                                                                      reinterpret_cast<void *>(clientSocket), 0, NULL));
 
 
 	}
+
+    this->Terminate();
 
 	return 0;
 }
@@ -143,4 +147,13 @@ void Server::printSocketError()
 		std::cout << msg << std::endl;
 	}
 	LocalFree(msg);
+}
+
+DWORD Server::processClient(void* clientSocket)
+{
+    SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocket);
+
+    mConnectionCount++;
+
+    return 0;
 }
