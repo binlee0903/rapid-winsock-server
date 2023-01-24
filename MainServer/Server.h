@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cassert>
 
+#include "sqlite3.h"
 #include "HttpHelper.h"
 
 constexpr int32_t MAX_CONNECTION_COUNT = 100;
@@ -27,7 +28,7 @@ private:
 	Server();
 	~Server();
 
-    static DWORD processClient(void* clientSocket);
+    static uint32_t processClient(void* clientSocket);
 
 	void openSocket();
 	void closeSocket(SOCKET socket);

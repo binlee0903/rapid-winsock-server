@@ -49,14 +49,14 @@ int32_t Server::Run()
 	if (returnValue == SOCKET_ERROR)
 	{
 		printSocketError();
-		return 0;
+		return -1;
 	}
 
 	returnValue = listen(mSocket, MAX_CONNECTION_COUNT);
 	if (returnValue == SOCKET_ERROR)
 	{
 		printSocketError();
-		return 0;
+		return -1;
 	}
 
 	SOCKET clientSocket = NULL;
@@ -71,7 +71,7 @@ int32_t Server::Run()
 		if (clientSocket == INVALID_SOCKET)
 		{
 			printSocketError();
-			return 0;
+			return -1;
 		}
 
 		wchar_t clientAddr[INET_ADDRSTRLEN];
@@ -80,8 +80,10 @@ int32_t Server::Run()
 		std::cout << L"Client IP : " << clientAddr << L"Client Num : " << mConnectionCount << std::endl;
 
         HANDLE threadHandle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
-                                                                      reinterpret_cast<_beginthreadex_proc_type>(Server::processClient),
-                                                                      reinterpret_cast<void *>(clientSocket), 0, NULL));
+                                                                      &Server::processClient,
+                                                                      reinterpret_cast<void*>(&clientSocket), 0, nullptr));
+
+        threadHandle;
 
 
 	}
@@ -140,7 +142,7 @@ void Server::printSocketError()
 {
 	wchar_t* msg = nullptr;
 	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
-		LANG_SYSTEM_DEFAULT, msg, 0, nullptr);
+		LANG_SYSTEM_DEFAULT, reinterpret_cast<wchar_t*>(&msg), 0, nullptr);
 
 	if (msg != nullptr)
 	{
@@ -149,11 +151,44 @@ void Server::printSocketError()
 	LocalFree(msg);
 }
 
-DWORD Server::processClient(void* clientSocket)
+// returns received data length
+uint32_t Server::reveiveClientData()
+
+uint32_t Server::processClient(void* clientSocketArg)
 {
-    SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocket);
+    constexpr int32_t BUFFER_SIZE = 512;
+
+    SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocketArg);
+    char buffer[BUFFER_SIZE];
+    std::wstring content;
+    content.reserve(BUFFER_SIZE * 2);
+
+    int recvLen = 0;
+    int recvLenSum = 0;
+
+    do
+    {
+        recvLen = recv(clientSocket, buffer, BUFFER_SIZE, MSG_WAITALL);
+
+        for (uint16_t i = 0; i < BUFFER_SIZE; ++i)
+        {
+            if (buffer[i] == '\r' && buffer[i + 1] == '\n')
+            {
+                buffer[i] = '\0';
+                content.push_back(buffer[i]);
+                break;
+            }
+            else
+            {
+                content.push_back(buffer[i]);
+            }
+        }
+
+        recvLenSum += recvLen;
+    } while (recvLen != 0);
+
 
     mConnectionCount++;
 
-    return 0;
+    return recvLenSum;
 }
