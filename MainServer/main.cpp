@@ -12,7 +12,7 @@
 
 int32_t main()
 {
-	Server& server = *Server::GetServer();
+	Server* server = Server::GetServer();
 
-	return server.Run();
-};
+	return server->Run();
+}

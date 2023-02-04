@@ -1,8 +1,14 @@
 #include "Server.h"
 
+Server* Server::mServer;
+uint32_t Server::mConnectionCount;
+SOCKET Server::mSocket;
+std::vector<HANDLE> Server::mThreadHandles;
+
 Server::Server()
-	: mWsaData(nullptr)
+	: mWsaData(new WSADATA())
 {
+	mServer = this;
 	mThreadHandles.reserve(100);
 	mConnectionCount = 0;
 	mSocket = 0;
@@ -23,11 +29,13 @@ Server::Server()
 		return;
 	}
 
-	std::cout << L"Vendor info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
+	//std::cout << L"Vendor info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
 }
 
 Server::~Server()
 {
+	delete mWsaData;
+
 	int result = WSACleanup();
 
 	assert(result == 0);
@@ -77,25 +85,19 @@ int32_t Server::Run()
 		wchar_t clientAddr[INET_ADDRSTRLEN];
 		InetNtopW(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr));
 
+		mConnectionCount++;
 		std::cout << L"Client IP : " << clientAddr << L"Client Num : " << mConnectionCount << std::endl;
 
         HANDLE threadHandle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
                                                                       &Server::processClient,
                                                                       reinterpret_cast<void*>(&clientSocket), 0, nullptr));
 
-        threadHandle;
-
-
+		mThreadHandles.push_back(threadHandle);
+		ZeroMemory(&clientSockAddr, sizeof(clientSockAddr));
 	}
 
-    this->Terminate();
-
-	return 0;
-}
-
-void Server::Terminate()
-{
 	delete this;
+	return 0;
 }
 
 void Server::openSocket()
@@ -103,7 +105,7 @@ void Server::openSocket()
 	SOCKET tempSocket = NULL;
 	tempSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	assert(tempSocket == 0);
+	assert(tempSocket != 0);
 	assert(mSocket == 0);
 
 	if (tempSocket == INVALID_SOCKET)
@@ -149,46 +151,62 @@ void Server::printSocketError()
 		std::cout << msg << std::endl;
 	}
 	LocalFree(msg);
+	delete this;
 }
 
 // returns received data length
-uint32_t Server::reveiveClientData()
+uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
+{
+	char buffer[BUFFER_SIZE];
+
+	int recvLen = 0;
+	int recvLenSum = 0;
+
+	do
+	{
+		recvLen = recv(clientSocket, buffer, BUFFER_SIZE, MSG_WAITALL);
+
+		for (uint16_t i = 0; i < BUFFER_SIZE; ++i)
+		{
+			if (buffer[i] == '\r' && buffer[i + 1] == '\n')
+			{
+				content.push_back(L'\0');
+				break;
+			}
+			else
+			{
+				content.push_back(buffer[i]);
+			}
+		}
+
+		recvLenSum += recvLen;
+	} while (recvLen != 0);
+
+	return recvLenSum;
+}
 
 uint32_t Server::processClient(void* clientSocketArg)
 {
-    constexpr int32_t BUFFER_SIZE = 512;
+	SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocketArg);
 
-    SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocketArg);
-    char buffer[BUFFER_SIZE];
-    std::wstring content;
-    content.reserve(BUFFER_SIZE * 2);
+	std::wstring content;
+	content.reserve(BUFFER_SIZE * 2);
+	uint32_t reveivedDataLength = reveiveClientData(clientSocket, content);
 
-    int recvLen = 0;
-    int recvLenSum = 0;
+	HttpObject* httpObject = new HttpObject();
+	HttpHelper::ParseHttpHeader(httpObject, content);
 
-    do
-    {
-        recvLen = recv(clientSocket, buffer, BUFFER_SIZE, MSG_WAITALL);
+	std::string response;
+	response.reserve(BUFFER_SIZE);
+	HttpHelper::CreateHttpResponse(httpObject, response);
 
-        for (uint16_t i = 0; i < BUFFER_SIZE; ++i)
-        {
-            if (buffer[i] == '\r' && buffer[i + 1] == '\n')
-            {
-                buffer[i] = '\0';
-                content.push_back(buffer[i]);
-                break;
-            }
-            else
-            {
-                content.push_back(buffer[i]);
-            }
-        }
+	uint32_t returnValue = send(clientSocket, response.c_str(), response.length(), 0);
+	if (returnValue == SOCKET_ERROR)
+	{
+		return -1;
+	}
 
-        recvLenSum += recvLen;
-    } while (recvLen != 0);
+	delete httpObject;
 
-
-    mConnectionCount++;
-
-    return recvLenSum;
+    return 0;
 }

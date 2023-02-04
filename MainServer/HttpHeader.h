@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 
-class HttpHeader
+class HttpHeader final
 {
 public:
 	HttpHeader();

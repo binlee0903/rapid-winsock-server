@@ -1,6 +1,6 @@
 #include "HttpHelper.h"
 
-void HttpHelper::ParseHttpHeader(HttpObject& httpObject, std::wstring& recv)
+void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::wstring& recv)
 {
     constexpr wchar_t BASIC_DELIM = L' ';
     constexpr wchar_t METHOD_DELIM = L':';
@@ -16,11 +16,11 @@ void HttpHelper::ParseHttpHeader(HttpObject& httpObject, std::wstring& recv)
 
     // read first line of http text
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject.SetHttpMethod(std::move(firstBuffer));
+    httpObject->SetHttpMethod(std::move(firstBuffer));
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject.SetHttpDest(std::move(firstBuffer));
+    httpObject->SetHttpDest(std::move(firstBuffer));
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject.SetHttpVersion(std::move(firstBuffer));
+    httpObject->SetHttpVersion(std::move(firstBuffer));
     is.ignore(LLONG_MAX, '\n');
 
     // read http key values
@@ -40,4 +40,34 @@ void HttpHelper::ParseHttpHeader(HttpObject& httpObject, std::wstring& recv)
             httpHeader->Add(firstBuffer, secondBuffer);
         }
     }
+}
+
+void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& response)
+{
+    switch (httpObject->GetHttpVersion())
+    {
+    case HttpObject::Http1_0:
+        response.append("HTTP/1.0 501 Not Implemented\n");
+        break;
+    case HttpObject::Http1_1:
+        response.append("HTTP/1.1 200 OK\n");
+        break;
+    case HttpObject::Http2_0:
+        response.append("HTTP/2.0 501 Not Implemented\n");
+        break;
+    case HttpObject::Http_UNKNOWN:
+        response.append("HTTP/1.1 503 Service Unavailable\n");
+    default:
+        assert(false);
+        break;
+    }
+
+    response.append("Server: Winsock2\n");
+
+    /*std::ifstream is;
+    is.open("");*/
+    response.append("Content-Length: 3\n");
+    response.append("Content-Type: text/html\n");
+    response.append("\n");
+    response.append("Hi");
 }
