@@ -7,6 +7,7 @@
 #include <vector>
 #include <process.h>
 #include <locale>
+#include <synchapi.h>
 
 #include <cstdint>
 #include <cassert>
@@ -31,22 +32,21 @@ private:
 	~Server();
 
     static uint32_t processClient(void* clientSocket);
+	static uint32_t reveiveClientData(SOCKET clientSocket, std::wstring& content);
 
 	void openSocket();
 	void closeSocket(SOCKET socket);
 	void printSocketError();
-
-	static uint32_t reveiveClientData(SOCKET clientSocket, std::wstring& content);
-
 private:
 	static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> mConverter;
 
 	static Server* mServer;
-	static uint32_t mConnectionCount;
-	static SOCKET mSocket;
-    static std::vector<HANDLE> mThreadHandles;
+	uint32_t mConnectionCount;
+	SOCKET mSocket;
+    std::vector<HANDLE> mThreadHandles;
 
 	sockaddr_in mServerAddr;
 	WSADATA* mWsaData;
+	SRWLOCK* mSRWLock;
 };
 

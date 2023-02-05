@@ -1,17 +1,16 @@
 #include "Server.h"
 
 Server* Server::mServer;
-uint32_t Server::mConnectionCount;
-SOCKET Server::mSocket;
-std::vector<HANDLE> Server::mThreadHandles;
 
 Server::Server()
 	: mWsaData(new WSADATA())
+	, mSRWLock(new SRWLOCK())
 {
 	mServer = this;
 	mThreadHandles.reserve(100);
 	mConnectionCount = 0;
 	mSocket = 0;
+	InitializeSRWLock(mSRWLock);
 
 	ZeroMemory(&mServerAddr, sizeof(sockaddr_in));
 	mServerAddr.sin_family = AF_INET;
@@ -19,22 +18,20 @@ Server::Server()
 	mServerAddr.sin_port = htons(PORT_NUMBER);
 
 	int result = WSAStartup(MAKEWORD(2, 2), mWsaData);
-
 	assert(result == 0);
 
 	if (result != 0)
 	{
-		std::cout << L"Socket start up Failed(Server constructor)" << std::endl;
+		std::wcout << L"Socket start up Failed(Server constructor)" << std::endl;
 
 		return;
 	}
-
-	//std::cout << L"Vendor info : " << mWsaData->lpVendorInfo << L"Version : " << mWsaData->wVersion << std::endl;
 }
 
 Server::~Server()
 {
 	delete mWsaData;
+	delete mSRWLock;
 
 	int result = WSACleanup();
 
@@ -70,7 +67,6 @@ int32_t Server::Run()
 	SOCKET clientSocket = NULL;
 	sockaddr_in clientSockAddr;
 	int32_t addrLen = sizeof(sockaddr_in);
-	wchar_t buffer[MAX_SOCKET_BUFFER_SIZE];
 
 	while (mConnectionCount < MAX_CONNECTION_COUNT)
 	{
@@ -82,17 +78,14 @@ int32_t Server::Run()
 			return -1;
 		}
 
-		wchar_t clientAddr[INET_ADDRSTRLEN];
-		InetNtopW(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr));
-
 		mConnectionCount++;
-		std::cout << L"Client IP : " << clientAddr << L"Client Num : " << mConnectionCount << std::endl;
 
         HANDLE threadHandle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
                                                                       &Server::processClient,
-                                                                      reinterpret_cast<void*>(&clientSocket), 0, nullptr));
+                                                                      reinterpret_cast<void*>(clientSocket), 0, nullptr));
 
 		mThreadHandles.push_back(threadHandle);
+		clientSocket = NULL;
 		ZeroMemory(&clientSockAddr, sizeof(clientSockAddr));
 	}
 
@@ -103,7 +96,7 @@ int32_t Server::Run()
 void Server::openSocket()
 {
 	SOCKET tempSocket = NULL;
-	tempSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	tempSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 	assert(tempSocket != 0);
 	assert(mSocket == 0);
@@ -114,11 +107,13 @@ void Server::openSocket()
 	}
 	else if (mSocket == 0)
 	{
+		const DWORD optValue = 1;
+		setsockopt(tempSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue));
 		mSocket = tempSocket;
 	}
 	else
 	{
-		std::cout << L"Server.cpp openSocket() attempted open socket twice" << std::endl;
+		std::wcout << L"Server.cpp openSocket() attempted open socket twice" << std::endl;
 	}
 }
 
@@ -159,19 +154,46 @@ uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
 {
 	char buffer[BUFFER_SIZE];
 
+	u_long readLen = 0;
 	int recvLen = 0;
 	int recvLenSum = 0;
 
 	do
 	{
-		recvLen = recv(clientSocket, buffer, BUFFER_SIZE, MSG_WAITALL);
+		int retValue = ioctlsocket(clientSocket, FIONREAD, &readLen);
+		if (retValue != 0)
+		{
+			break;
+		}
 
-		for (uint16_t i = 0; i < BUFFER_SIZE; ++i)
+		if (readLen == 0)
+		{
+			break;
+		}
+
+		if (readLen > BUFFER_SIZE)
+		{
+			readLen = BUFFER_SIZE;
+		}
+
+
+		recvLen = recv(clientSocket, buffer, readLen, 0);
+
+		if (recvLen == 0)
+		{
+			break;
+		}
+
+		for (uint16_t i = 0; i < readLen; ++i)
 		{
 			if (buffer[i] == '\r' && buffer[i + 1] == '\n')
 			{
-				content.push_back(L'\0');
-				break;
+				if (buffer[i + 2] == '\r' && buffer[i + 3] == '\n')
+				{
+					content.push_back(L'\0');
+					break;
+				}
+				content.push_back(buffer[i]);
 			}
 			else
 			{
@@ -182,16 +204,36 @@ uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
 		recvLenSum += recvLen;
 	} while (recvLen != 0);
 
+	AcquireSRWLockExclusive(mServer->mSRWLock);
+	std::wcout << L"Content : " << content << std::endl;
+	ReleaseSRWLockExclusive(mServer->mSRWLock);
+
 	return recvLenSum;
 }
 
 uint32_t Server::processClient(void* clientSocketArg)
 {
 	SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocketArg);
+	sockaddr_in clientSockAddr;
+
+	wchar_t clientAddr[INET_ADDRSTRLEN];
+	int32_t clientAddrLen = sizeof(clientAddr);
+	getpeername(clientSocket, reinterpret_cast<sockaddr*>(&clientSockAddr), &clientAddrLen);
+	InetNtop(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr) / 2);
+
+	AcquireSRWLockExclusive(mServer->mSRWLock);
+	std::wcout << L"Client IP : " << clientAddr << L"Client Num : " << mServer->mConnectionCount << std::endl;
+	ReleaseSRWLockExclusive(mServer->mSRWLock);
 
 	std::wstring content;
 	content.reserve(BUFFER_SIZE * 2);
 	uint32_t reveivedDataLength = reveiveClientData(clientSocket, content);
+
+	if (reveivedDataLength == 0)
+	{
+		mServer->closeSocket(clientSocket);
+		return 0;
+	}
 
 	HttpObject* httpObject = new HttpObject();
 	HttpHelper::ParseHttpHeader(httpObject, content);
@@ -200,7 +242,7 @@ uint32_t Server::processClient(void* clientSocketArg)
 	response.reserve(BUFFER_SIZE);
 	HttpHelper::CreateHttpResponse(httpObject, response);
 
-	uint32_t returnValue = send(clientSocket, response.c_str(), response.length(), 0);
+	int32_t returnValue = send(clientSocket, response.c_str(), response.length(), 0);
 	if (returnValue == SOCKET_ERROR)
 	{
 		return -1;
