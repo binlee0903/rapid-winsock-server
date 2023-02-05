@@ -16,11 +16,11 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::wstring& recv)
 
     // read first line of http text
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject->SetHttpMethod(std::move(firstBuffer));
+    httpObject->SetHttpMethod(firstBuffer);
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject->SetHttpDest(std::move(firstBuffer));
+    httpObject->SetHttpDest(firstBuffer);
     std::getline(is, firstBuffer, BASIC_DELIM);
-    httpObject->SetHttpVersion(std::move(firstBuffer));
+    httpObject->SetHttpVersion(firstBuffer);
     is.ignore(LLONG_MAX, '\n');
 
     // read http key values
@@ -40,6 +40,8 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::wstring& recv)
             httpHeader->Add(firstBuffer, secondBuffer);
         }
     }
+
+    httpObject->SetHttpHeader(httpHeader);
 }
 
 void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& response)
@@ -47,27 +49,27 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& respons
     switch (httpObject->GetHttpVersion())
     {
     case HttpObject::Http1_0:
-        response.append("HTTP/1.0 501 Not Implemented\n");
+        response.append("HTTP/1.0 501 Not Implemented\r\n");
         break;
     case HttpObject::Http1_1:
         response.append("HTTP/1.1 200 OK\n");
         break;
     case HttpObject::Http2_0:
-        response.append("HTTP/2.0 501 Not Implemented\n");
+        response.append("HTTP/2.0 501 Not Implemented\r\n");
         break;
     case HttpObject::Http_UNKNOWN:
-        response.append("HTTP/1.1 503 Service Unavailable\n");
+        response.append("HTTP/1.1 503 Service Unavailable\r\n");
     default:
         assert(false);
         break;
     }
 
-    response.append("Server: Winsock2\n");
+    response.append("Server: Winsock2\r\n");
 
     /*std::ifstream is;
     is.open("");*/
-    response.append("Content-Length: 3\n");
-    response.append("Content-Type: text/html\n");
-    response.append("\n");
-    response.append("Hi");
+    response.append("Content-Length: 3\r\n");
+    response.append("Content-Type: text/html\r\n");
+    response.append("\r\n");
+    response.append("Hi\r\n\r\n");
 }
