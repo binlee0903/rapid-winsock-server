@@ -17,11 +17,11 @@ public:
 	~HttpObject();
 
 	std::wstring& GetHttpMethod();
-	void SetHttpMethod(std::wstring&& httpMethod);
+	void SetHttpMethod(std::wstring& httpMethod);
 	std::wstring& GetHttpDest();
-	void SetHttpDest(std::wstring&& httpDest);
+	void SetHttpDest(std::wstring& httpDest);
 	HttpVersion GetHttpVersion();
-	void SetHttpVersion(std::wstring&& httpVersion);
+	void SetHttpVersion(std::wstring& httpVersion);
 	HttpHeader* GetHttpHeader();
 	void SetHttpHeader(HttpHeader* httpHeader);
 
