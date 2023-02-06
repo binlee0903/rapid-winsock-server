@@ -228,7 +228,7 @@ uint32_t Server::processClient(void* clientSocketArg)
 
 	std::wstring content;
 	content.reserve(BUFFER_SIZE * 2);
-	uint32_t receivedDataLength = reveiveClientData(clientSocket, content);
+	uint32_t receivedDataLength = receiveClientData(clientSocket, content);
 
 	if (receivedDataLength == 0)
 	{
