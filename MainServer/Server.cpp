@@ -1,6 +1,7 @@
 #include "Server.h"
 
 Server* Server::mServer;
+std::multimap<std::wstring, std::wstring> Server::mClientData;
 
 Server::Server()
 	: mWsaData(new WSADATA())
@@ -30,6 +31,11 @@ Server::Server()
 
 Server::~Server()
 {
+	for (auto x : mThreadHandles)
+	{
+		CloseHandle(x);
+	}
+
 	delete mWsaData;
 	delete mSRWLock;
 
@@ -150,7 +156,7 @@ void Server::printSocketError()
 }
 
 // returns received data length
-uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
+uint32_t Server::receiveClientData(SOCKET clientSocket, std::wstring& content)
 {
 	char buffer[BUFFER_SIZE];
 
@@ -160,6 +166,11 @@ uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
 
 	do
 	{
+		/*HANDLE eventHandle = WSACreateEvent();
+		WSANETWORKEVENTS netEvents;
+		WSAEventSelect(clientSocket, eventHandle, FD_READ);
+		WSAWaitForMultipleEvents(1, &eventHandle, false, INFINITE, false);*/
+
 		int retValue = ioctlsocket(clientSocket, FIONREAD, &readLen);
 		if (retValue != 0)
 		{
@@ -179,34 +190,28 @@ uint32_t Server::reveiveClientData(SOCKET clientSocket, std::wstring& content)
 
 		recvLen = recv(clientSocket, buffer, readLen, 0);
 
-		if (recvLen == 0)
+		if (recvLen != 0)
 		{
-			break;
-		}
-
-		for (uint16_t i = 0; i < readLen; ++i)
-		{
-			if (buffer[i] == '\r' && buffer[i + 1] == '\n')
+			for (uint16_t i = 0; i < readLen; ++i)
 			{
-				if (buffer[i + 2] == '\r' && buffer[i + 3] == '\n')
+				if (buffer[i] == '\r' && buffer[i + 1] == '\n')
 				{
-					content.push_back(L'\0');
-					break;
+					if (buffer[i + 2] == '\r' && buffer[i + 3] == '\n')
+					{
+						content.push_back(L'\0');
+						break;
+					}
+					content.push_back(buffer[i]);
 				}
-				content.push_back(buffer[i]);
+				else
+				{
+					content.push_back(buffer[i]);
+				}
 			}
-			else
-			{
-				content.push_back(buffer[i]);
-			}
+
+			recvLenSum += recvLen;
 		}
-
-		recvLenSum += recvLen;
 	} while (recvLen != 0);
-
-	AcquireSRWLockExclusive(mServer->mSRWLock);
-	std::wcout << L"Content : " << content << std::endl;
-	ReleaseSRWLockExclusive(mServer->mSRWLock);
 
 	return recvLenSum;
 }
@@ -221,19 +226,18 @@ uint32_t Server::processClient(void* clientSocketArg)
 	getpeername(clientSocket, reinterpret_cast<sockaddr*>(&clientSockAddr), &clientAddrLen);
 	InetNtop(AF_INET, &clientSockAddr.sin_addr, clientAddr, sizeof(clientAddr) / 2);
 
-	AcquireSRWLockExclusive(mServer->mSRWLock);
-	std::wcout << L"Client IP : " << clientAddr << L"Client Num : " << mServer->mConnectionCount << std::endl;
-	ReleaseSRWLockExclusive(mServer->mSRWLock);
-
 	std::wstring content;
 	content.reserve(BUFFER_SIZE * 2);
-	uint32_t reveivedDataLength = reveiveClientData(clientSocket, content);
+	uint32_t receivedDataLength = reveiveClientData(clientSocket, content);
 
-	if (reveivedDataLength == 0)
+	if (receivedDataLength == 0)
 	{
 		mServer->closeSocket(clientSocket);
+		_endthreadex(0);
 		return 0;
 	}
+
+	mClientData.insert(std::pair<std::wstring, std::wstring>{ clientAddr, content }); // for debug
 
 	HttpObject* httpObject = new HttpObject();
 	HttpHelper::ParseHttpHeader(httpObject, content);
