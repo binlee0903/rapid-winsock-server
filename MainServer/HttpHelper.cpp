@@ -64,7 +64,7 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& respons
         break;
     }
 
-    response.append("Server: Winsock2\r\n");
+    response.append("HttpsServer: Winsock2\r\n");
 
     /*std::ifstream is;
     is.open("");*/

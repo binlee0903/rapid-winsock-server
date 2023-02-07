@@ -71,7 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>C:\Program Files\OpenSSL\bin;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,11 +112,12 @@
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,17 +138,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="IClient.cpp" />
+    <ClCompile Include="HttpsClient.cpp" />
     <ClCompile Include="HttpHeader.cpp" />
     <ClCompile Include="HttpHelper.cpp" />
     <ClCompile Include="HttpObject.cpp" />
+    <ClCompile Include="IServer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="HttpsServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IClient.h" />
+    <ClInclude Include="HttpsClient.h" />
     <ClInclude Include="HttpHeader.h" />
     <ClInclude Include="HttpHelper.h" />
     <ClInclude Include="HttpObject.h" />
-    <ClInclude Include="Server.h" />
+    <ClInclude Include="HttpsServer.h" />
+    <ClInclude Include="IServer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Dockerfile" />
