@@ -66,7 +66,7 @@ int HttpsClient::ProcessRead()
 	std::wstring content;
 	content.reserve(BUFFER_SIZE * 2);
 
-	uint32_t receivedDataLength = receiveData(content);
+	uint32_t receivedDataLength = receiveData(&content);
 
 	if (receivedDataLength == 0)
 	{
@@ -114,7 +114,7 @@ int HttpsClient::ProcessOOB()
 	return 0;
 }
 
-uint32_t HttpsClient::receiveData(std::wstring& content)
+uint32_t HttpsClient::receiveData(std::wstring* content)
 {
 	char buffer[BUFFER_SIZE];
 
@@ -153,14 +153,14 @@ uint32_t HttpsClient::receiveData(std::wstring& content)
 				{
 					if (buffer[i + 2] == '\r' && buffer[i + 3] == '\n')
 					{
-						content.push_back(L'\0');
+						content->push_back(L'\0');
 						break;
 					}
-					content.push_back(buffer[i]);
+					content->push_back(buffer[i]);
 				}
 				else
 				{
-					content.push_back(buffer[i]);
+					content->push_back(buffer[i]);
 				}
 			}
 

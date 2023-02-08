@@ -35,7 +35,7 @@ public:
 private:
 	void printSocketError();
 	int processSSLHandshake();
-	uint32_t receiveData(std::wstring& content); // returns received data length
+	uint32_t receiveData(std::wstring* content); // returns received data length
 
 private:
 	SSL* mSSL;

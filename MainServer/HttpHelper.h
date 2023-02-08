@@ -5,14 +5,10 @@
 #include <sstream>
 #include <cassert>
 
-class HttpHelper final
+namespace HttpHelper 
 {
-public:
-	HttpHelper() = delete;
-	~HttpHelper() = delete;
 
-	static void ParseHttpHeader(HttpObject* httpObject, std::wstring& recv);
-	static void CreateHttpResponse(HttpObject* httpObject, std::string& response);
-
+	void ParseHttpHeader(HttpObject* httpObject, std::wstring& recv);
+	void CreateHttpResponse(HttpObject* httpObject, std::string& response);
 };
 
