@@ -39,6 +39,12 @@
     <ClCompile Include="IServer.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="IDataBaseConnector.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SQLiteConnector.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpsServer.h">
@@ -60,6 +66,21 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="IServer.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpHeaderStrings.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="IDataBaseConnector.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="SQLiteConnector.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="SQLiteSQLStatements.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ArticleObject.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

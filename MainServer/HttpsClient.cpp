@@ -34,6 +34,7 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 	getpeername(mSocket, reinterpret_cast<sockaddr*>(&mClientSockAddr), &clientAddrLen);
 	InetNtop(AF_INET, &mClientSockAddr.sin_addr, mClientAddr, sizeof(mClientAddr) / 2);
 
+	mbIsKeepAlive = false;
 	mbIsSSLConnected = false;
 	mbIsReceivedInitialHttpHeader = false;
 

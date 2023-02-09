@@ -47,6 +47,7 @@ private:
 	sockaddr_in mClientSockAddr;
 	HANDLE mEventHandle;
 
+	bool mbIsKeepAlive;
 	bool mbIsSSLConnected;
 	bool mbIsReceivedInitialHttpHeader;
 	wchar_t mClientAddr[INET_ADDRSTRLEN];

@@ -138,6 +138,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="IDataBaseConnector.cpp" />
     <ClCompile Include="IClient.cpp" />
     <ClCompile Include="HttpsClient.cpp" />
     <ClCompile Include="HttpHeader.cpp" />
@@ -146,8 +147,12 @@
     <ClCompile Include="IServer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="HttpsServer.cpp" />
+    <ClCompile Include="SQLiteConnector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ArticleObject.h" />
+    <ClInclude Include="IDataBaseConnector.h" />
+    <ClInclude Include="HttpHeaderStrings.h" />
     <ClInclude Include="IClient.h" />
     <ClInclude Include="HttpsClient.h" />
     <ClInclude Include="HttpHeader.h" />
@@ -155,6 +160,8 @@
     <ClInclude Include="HttpObject.h" />
     <ClInclude Include="HttpsServer.h" />
     <ClInclude Include="IServer.h" />
+    <ClInclude Include="SQLiteConnector.h" />
+    <ClInclude Include="SQLiteSQLStatements.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Dockerfile" />

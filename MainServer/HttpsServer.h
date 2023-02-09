@@ -17,7 +17,6 @@
 #include <openssl/ssl3.h>
 #include <openssl/err.h>
 
-#include "sqlite3.h"
 #include "HttpHelper.h"
 #include "HttpsClient.h"
 
