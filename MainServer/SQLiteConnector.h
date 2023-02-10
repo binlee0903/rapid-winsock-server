@@ -8,7 +8,7 @@
 
 #include "sqlite3.h"
 
-constexpr char SQLITE_DB_LOCATION[] = "";
+constexpr char SQLITE_DB_LOCATION[] = "C:\\Users\\egb35\\Documents\\sqlite_db_file\\blog.db";
 
 class SQLiteConnector : public IDataBaseConnector
 {
