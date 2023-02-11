@@ -2,6 +2,7 @@
 
 HttpObject::HttpObject()
 	: mHttpHeader(nullptr)
+	, mHttpVersion(Http_UNKNOWN)
 {
 }
 
@@ -10,22 +11,22 @@ HttpObject::~HttpObject()
 	delete mHttpHeader;
 }
 
-std::wstring& HttpObject::GetHttpMethod()
+std::string& HttpObject::GetHttpMethod()
 {
 	return mHttpMethod;
 }
 
-void HttpObject::SetHttpMethod(std::wstring& httpMethod)
+void HttpObject::SetHttpMethod(std::string& httpMethod)
 {
 	mHttpMethod = httpMethod;
 }
 
-std::wstring& HttpObject::GetHttpDest()
+std::string& HttpObject::GetHttpDest()
 {
 	return mDest;
 }
 
-void HttpObject::SetHttpDest(std::wstring& httpDest)
+void HttpObject::SetHttpDest(std::string& httpDest)
 {
 	mDest = httpDest;
 }
@@ -35,7 +36,7 @@ HttpObject::HttpVersion HttpObject::GetHttpVersion()
 	return mHttpVersion;
 }
 
-void HttpObject::SetHttpVersion(std::wstring& httpVersion)
+void HttpObject::SetHttpVersion(std::string& httpVersion)
 {
 	constexpr uint16_t FLOAT_VALUE_INDEX = 5;
 

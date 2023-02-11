@@ -10,6 +10,7 @@
 
 #include "HttpObject.h"
 #include "HttpHelper.h"
+//#include "HTMLPageRouter.h"
 
 class HttpObject;
 
@@ -35,9 +36,11 @@ public:
 private:
 	void printSocketError();
 	int processSSLHandshake();
-	uint32_t receiveData(std::wstring* content); // returns received data length
+	uint32_t receiveData(std::string* content); // returns received data length
 
 private:
+	/*HTMLPageRouter* mRouter;*/
+	HttpHelper* mHttpHelper;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
 	SRWLOCK* mSRWLock;

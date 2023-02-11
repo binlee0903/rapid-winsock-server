@@ -12,10 +12,10 @@ public:
 
 	HttpHeader& operator=(const HttpHeader& rhs) = delete;
 
-	void Add(std::wstring headerName, std::wstring headerText);
-	void Remove(std::wstring headerName);
+	void Add(std::string headerName, std::string headerText);
+	void Remove(std::string headerName);
 
 private:
-	std::unordered_map<std::wstring, std::wstring> mHttpHeaders;
+	std::unordered_map<std::string, std::string> mHttpHeaders;
 };
 

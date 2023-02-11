@@ -19,6 +19,7 @@
 
 #include "HttpHelper.h"
 #include "HttpsClient.h"
+//#include "HTMLPageRouter.h"
 
 constexpr uint16_t MAX_CONNECTION_COUNT = 100;
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192 + 1; // \0
@@ -31,9 +32,9 @@ public:
 	virtual int32_t Run();
 
 	static HttpsServer* GetServer();
+	virtual HTMLPageRouter* GetHTMLPageRouter() override;
 	virtual SSL* GetSSL() const override;
 	virtual SSL_CTX* GetSSLCTX() const override;
-
 private:
 	HttpsServer();
 	~HttpsServer();
@@ -46,6 +47,7 @@ private:
 	void printSocketError();
 private:
 	static HttpsServer* mServer;
+	/*static HTMLPageRouter* mRouter;*/
 	uint32_t mConnectionCount;
 	SOCKET mSocket;
 

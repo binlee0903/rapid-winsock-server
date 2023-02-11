@@ -16,18 +16,18 @@ public:
 	HttpObject();
 	~HttpObject();
 
-	std::wstring& GetHttpMethod();
-	void SetHttpMethod(std::wstring& httpMethod);
-	std::wstring& GetHttpDest();
-	void SetHttpDest(std::wstring& httpDest);
+	std::string& GetHttpMethod();
+	void SetHttpMethod(std::string& httpMethod);
+	std::string& GetHttpDest();
+	void SetHttpDest(std::string& httpDest);
 	HttpVersion GetHttpVersion();
-	void SetHttpVersion(std::wstring& httpVersion);
+	void SetHttpVersion(std::string& httpVersion);
 	HttpHeader* GetHttpHeader();
 	void SetHttpHeader(HttpHeader* httpHeader);
 
 private:
-	std::wstring mHttpMethod;
-	std::wstring mDest;
+	std::string mHttpMethod;
+	std::string mDest;
 	HttpVersion mHttpVersion;
 	HttpHeader* mHttpHeader;
 };

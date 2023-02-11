@@ -1,12 +1,14 @@
 #include "HttpsServer.h"
 
-HttpsServer* HttpsServer::mServer;
+HttpsServer* HttpsServer::mServer = nullptr;
+//HTMLPageRouter* HttpsServer::mRouter = nullptr;
 
 HttpsServer::HttpsServer()
 	: mWsaData(new WSADATA())
 	, mSRWLock(new SRWLOCK())
 {
 	mServer = this;
+	/*mRouter = new HTMLPageRouter();*/
 	mThreadHandles.reserve(100);
 	mConnectionCount = 0;
 	mSocket = 0;
@@ -62,6 +64,8 @@ HttpsServer::~HttpsServer()
 		CloseHandle(x);
 	}
 
+	HttpHelper::DeleteHttpHelper();
+	/*delete mRouter;*/
 	delete mWsaData;
 	delete mSRWLock;
 
@@ -182,6 +186,12 @@ HttpsServer* HttpsServer::GetServer()
 	return mServer;
 }
 
+HTMLPageRouter* HttpsServer::GetHTMLPageRouter()
+{
+	/*return mRouter;*/
+	return nullptr;
+}
+
 SSL* HttpsServer::GetSSL() const
 {
 	return mSSL;
@@ -194,9 +204,9 @@ SSL_CTX* HttpsServer::GetSSLCTX() const
 
 void HttpsServer::printSocketError()
 {
-	wchar_t* msg = nullptr;
-	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
-		LANG_SYSTEM_DEFAULT, reinterpret_cast<wchar_t*>(&msg), 0, nullptr);
+	char* msg = nullptr;
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
+		LANG_SYSTEM_DEFAULT, reinterpret_cast<char*>(&msg), 0, nullptr);
 
 	if (msg != nullptr)
 	{
@@ -239,21 +249,28 @@ uint32_t HttpsServer::processClient(void* clientSocketArg)
 
 	HANDLE clientEventHandle = client->GetEventHandle();
 	WSANETWORKEVENTS netEvents;
+	bool bGotRequest = false;
 
 	while (true)
 	{
 		WSAWaitForMultipleEvents(1, &clientEventHandle, false, INFINITE, false);
 		WSAEnumNetworkEvents(clientSocket, clientEventHandle, &netEvents);
 
-		if (netEvents.lNetworkEvents & (FD_READ | FD_WRITE))
+		if (netEvents.lNetworkEvents & FD_READ)
 		{
-			if (client->ProcessRead() != 0)
+			int retCode = client->ProcessRead();
+
+			if (retCode == -1)
 			{
 				break;
 			}
-			client->ProcessWrite();
+			else if (retCode == 0)
+			{
+				client->ProcessWrite();
+			}
 		}
-		else if (netEvents.lNetworkEvents & FD_CLOSE)
+
+		if (netEvents.lNetworkEvents & FD_CLOSE)
 		{
 			client->ProcessClose();
 			break;

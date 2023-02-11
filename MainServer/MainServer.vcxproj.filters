@@ -45,6 +45,15 @@
     <ClCompile Include="SQLiteConnector.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="HTMLPageRouter.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpFileContainer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpsServer.h">
@@ -81,6 +90,15 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="ArticleObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="HTMLPageRouter.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpFileContainer.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

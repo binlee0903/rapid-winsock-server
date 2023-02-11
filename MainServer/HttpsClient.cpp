@@ -17,7 +17,9 @@ HANDLE HttpsClient::GetEventHandle() const
 int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket)
 {
 	mServer = server;
+	mHttpHelper = HttpHelper::GetHttpHelper();
 	mSSLCTX = mServer->GetSSLCTX();
+	/*mRouter = mServer->GetHTMLPageRouter();*/
 	mSRWLock = srwLock;
 	mHttpObject = new HttpObject();
 	mEventHandle = WSACreateEvent();
@@ -28,7 +30,7 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 		return -1;
 	}
 
-	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_WRITE | FD_CLOSE);
+	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
 
 	int32_t clientAddrLen = sizeof(mClientAddr);
 	getpeername(mSocket, reinterpret_cast<sockaddr*>(&mClientSockAddr), &clientAddrLen);
@@ -43,9 +45,9 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 
 void HttpsClient::printSocketError()
 {
-	wchar_t* msg = nullptr;
-	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
-		LANG_SYSTEM_DEFAULT, reinterpret_cast<wchar_t*>(&msg), 0, nullptr);
+	char* msg = nullptr;
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, nullptr, WSAGetLastError(),
+		LANG_SYSTEM_DEFAULT, reinterpret_cast<char*>(&msg), 0, nullptr);
 
 	if (msg != nullptr)
 	{
@@ -64,17 +66,17 @@ int HttpsClient::ProcessRead()
 		}
 	}
 
-	std::wstring content;
+	std::string content;
 	content.reserve(BUFFER_SIZE * 2);
 
 	uint32_t receivedDataLength = receiveData(&content);
 
 	if (receivedDataLength == 0)
 	{
-		return 0;
+		return 1;
 	}
 
-	HttpHelper::ParseHttpHeader(mHttpObject, content);
+	mHttpHelper->ParseHttpHeader(mHttpObject, content);
 	mbIsReceivedInitialHttpHeader = true;
 
 	// TODO : Check Http args
@@ -84,19 +86,29 @@ int HttpsClient::ProcessRead()
 
 int HttpsClient::ProcessWrite()
 {
-	if (mbIsReceivedInitialHttpHeader == true)
+	std::string response;
+	response.reserve(BUFFER_SIZE);
+	mHttpHelper->CreateHttpResponse(mHttpObject, response);
+
+	int32_t returnValue = 0;
+	size_t writeSize = 0;
+	int32_t errorCode = 0;
+
+	while (returnValue <= 0)
 	{
-		std::string response;
-		response.reserve(BUFFER_SIZE);
-		HttpHelper::CreateHttpResponse(mHttpObject, response);
+		returnValue = SSL_write_ex(mSSL, &response.c_str()[writeSize], response.length() - writeSize, &writeSize);
+		errorCode = SSL_get_error(mSSL, returnValue);
 
-		int32_t returnValue = SSL_write(mSSL, response.c_str(), response.length());
-
-		if (returnValue <= 0)
+		if (errorCode == SSL_ERROR_WANT_WRITE)
+		{
+			continue;
+		}
+		else if (errorCode != SSL_ERROR_NONE)
 		{
 			AcquireSRWLockExclusive(mSRWLock);
-			std::wcout << L"ssl write failed" << std::endl;
+			std::wcout << L"ssl write failed, error Code : " << errorCode << std::endl;
 			ReleaseSRWLockExclusive(mSRWLock);
+			ProcessClose();
 		}
 	}
 
@@ -115,7 +127,7 @@ int HttpsClient::ProcessOOB()
 	return 0;
 }
 
-uint32_t HttpsClient::receiveData(std::wstring* content)
+uint32_t HttpsClient::receiveData(std::string* content)
 {
 	char buffer[BUFFER_SIZE];
 

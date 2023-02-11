@@ -1,16 +1,45 @@
 #include "HttpHelper.h"
 
-void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::wstring& recv)
+HttpHelper* HttpHelper::mInstance = nullptr;
+
+HttpHelper::HttpHelper()
+    : mServerHttpVersion("HTTP/1.1")
+    , mFileContainer(new HttpFileContainer())
 {
-    constexpr wchar_t BASIC_DELIM = L' ';
-    constexpr wchar_t METHOD_DELIM = L':';
+    
+}
+
+HttpHelper::~HttpHelper()
+{
+    delete mFileContainer;
+}
+
+HttpHelper* HttpHelper::GetHttpHelper()
+{
+    if (mInstance == nullptr)
+    {
+        mInstance = new HttpHelper();
+    }
+
+    return mInstance;
+}
+
+void HttpHelper::DeleteHttpHelper()
+{
+    delete mInstance;
+}
+
+void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::string& recv)
+{
+    constexpr char BASIC_DELIM = L' ';
+    constexpr char METHOD_DELIM = L':';
     constexpr uint16_t BUFFER_BASIC_SIZE = 32;
 
-    std::wistringstream is{recv};
+    std::istringstream is{recv};
 
     HttpHeader* httpHeader = new HttpHeader();
-    std::wstring firstBuffer;
-    std::wstring secondBuffer;
+    std::string firstBuffer;
+    std::string secondBuffer;
     firstBuffer.reserve(BUFFER_BASIC_SIZE);
     secondBuffer.reserve(BUFFER_BASIC_SIZE);
 
@@ -46,30 +75,80 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::wstring& recv)
 
 void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& response)
 {
+    createHeader(httpObject, response);
+
+    std::string& httpDest = httpObject->GetHttpDest();
+    
+    if (httpDest == "/")
+    {
+        const std::string* destFile = mFileContainer->GetIndexFile();
+        response += *destFile;
+    }
+    else
+    {
+        size_t offset = httpDest.rfind(L'/') + 1;
+        std::string fileName = httpDest.substr(offset);
+
+        const std::string* destFile = mFileContainer->GetFile(&fileName);
+        response += *destFile;
+    }
+
+    response.append("\r\n\r\n");
+}
+
+void HttpHelper::createHeader(HttpObject* httpObject, std::string& response)
+{
     switch (httpObject->GetHttpVersion())
     {
     case HttpObject::Http1_0:
         response.append("HTTP/1.0 501 Not Implemented\r\n");
         break;
     case HttpObject::Http1_1:
-        response.append("HTTP/1.1 200 OK\n");
+        response.append("HTTP/1.1 200 OK\r\n");
         break;
     case HttpObject::Http2_0:
         response.append("HTTP/2.0 501 Not Implemented\r\n");
         break;
     case HttpObject::Http_UNKNOWN:
         response.append("HTTP/1.1 503 Service Unavailable\r\n");
+        break;
     default:
         assert(false);
         break;
     }
 
-    response.append("HttpsServer: Winsock2\r\n");
+    std::string& httpDest = httpObject->GetHttpDest();
 
-    /*std::ifstream is;
-    is.open("");*/
-    response.append("Content-Length: 3\r\n");
-    response.append("Content-Type: text/html\r\n");
-    response.append("\r\n");
-    response.append("Hi\r\n\r\n");
+    if (httpDest == "/")
+    {
+        const std::string* destFile = mFileContainer->GetIndexFile();
+        response += "Content-Type: text/html\r\n";
+        response += "Content-Length: ";
+        response += std::to_string(destFile->size());
+        response += "\r\n";
+        response += "Server: Winsock2\r\n\r\n";
+    }
+    else
+    {
+        size_t offset = httpDest.rfind(L'/') + 1;
+        std::string fileName = httpDest.substr(offset);
+
+        const std::string* destFile = mFileContainer->GetFile(&fileName);
+        response += "Content-Length: ";
+        response += std::to_string(destFile->size());
+        response += "\r\n";
+        response += "Server: Winsock2\r\n";
+
+        offset = httpDest.rfind(L'.') + 1;
+        std::string ext = httpDest.substr(offset);
+
+        if (ext == "js")
+        {
+            response += "Content-Type: text/javascript\r\n\r\n";
+        }
+        else
+        {
+            response += "Content-Type: text/css\r\n\r\n";
+        }
+    }
 }
