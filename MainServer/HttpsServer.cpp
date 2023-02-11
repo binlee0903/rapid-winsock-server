@@ -6,6 +6,7 @@ HttpsServer* HttpsServer::mServer = nullptr;
 HttpsServer::HttpsServer()
 	: mWsaData(new WSADATA())
 	, mSRWLock(new SRWLOCK())
+	, mIsQuit(false)
 {
 	mServer = this;
 	/*mRouter = new HTMLPageRouter();*/
@@ -113,28 +114,27 @@ int32_t HttpsServer::Run()
 	sockaddr_in clientSockAddr;
 	int32_t addrLen = sizeof(sockaddr_in);
 
-	while (mConnectionCount < MAX_CONNECTION_COUNT)
+	reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, &HttpsServer::CheckQuitMessage, nullptr, 0, nullptr));
+
+	while (!mIsQuit)
 	{
-		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_INFINITE, false);
+		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_WAIT_TIMEOUT, false);
 		WSAEnumNetworkEvents(mSocket, eventHandle, &netEvents);
 
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
 			clientSocket = processAccept();
+			mConnectionCount++;
+			mThreadHandles.push_back(reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
+				&HttpsServer::processClient,
+				reinterpret_cast<void*>(clientSocket), 0, nullptr)));
+			clientSocket = NULL;
+			ZeroMemory(&clientSockAddr, sizeof(clientSockAddr));
 			break;
 		default:
 			continue;
 		}
-		mConnectionCount++;
-
-        HANDLE threadHandle = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
-                                                                      &HttpsServer::processClient,
-                                                                      reinterpret_cast<void*>(clientSocket), 0, nullptr));
-
-		mThreadHandles.push_back(threadHandle);
-		clientSocket = NULL;
-		ZeroMemory(&clientSockAddr, sizeof(clientSockAddr));
 	}
 
 	WSACloseEvent(eventHandle);
@@ -231,6 +231,20 @@ SOCKET HttpsServer::processAccept()
 
 	mClientSockets.push_back(clientSocket);
 	return clientSocket;
+}
+
+uint32_t HttpsServer::CheckQuitMessage(void*)
+{
+	char ch = 0;
+
+	while (ch != 'q')
+	{
+		ch = _getch();
+	}
+
+	mServer->mIsQuit = true;
+
+	return 0;
 }
 
 uint32_t HttpsServer::processClient(void* clientSocketArg)

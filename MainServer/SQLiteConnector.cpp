@@ -46,7 +46,7 @@ int32_t SQLiteConnector::Select(std::string* tableName, uint32_t index, ArticleO
 
 		while (*tempContent++)
 		{
-			articleObject.CONTENT.push_back(*tempContent);
+			articleObject.ARTICLE.push_back(*tempContent);
 		}
 	}
 

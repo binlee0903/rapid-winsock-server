@@ -3,5 +3,7 @@
 struct ArticleObject
 {
 	uint32_t INDEX;
-	std::string CONTENT;
+	std::string ARTICLE_TITLE;
+	std::string ARTICLE;
+	std::string DATE;
 };

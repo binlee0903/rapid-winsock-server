@@ -6,6 +6,7 @@
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <conio.h>
 #include <cstdint>
 
 #include <vector>
@@ -39,6 +40,7 @@ private:
 	HttpsServer();
 	~HttpsServer();
 
+	static uint32_t CheckQuitMessage(void*);
     static uint32_t processClient(void* clientSocket);
 	SOCKET processAccept();
 
@@ -46,6 +48,8 @@ private:
 	void closeSocket(SOCKET socket);
 	void printSocketError();
 private:
+	bool mIsQuit;
+
 	static HttpsServer* mServer;
 	/*static HTMLPageRouter* mRouter;*/
 	uint32_t mConnectionCount;
