@@ -28,6 +28,7 @@ public:
 	virtual HANDLE GetEventHandle() const override;
 
 	virtual int InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket) override;
+	virtual bool IsKeepAlive() const override;
 	virtual int ProcessRead() override;
 	virtual int ProcessWrite() override;
 	virtual int ProcessClose() override;
@@ -52,6 +53,5 @@ private:
 
 	bool mbIsKeepAlive;
 	bool mbIsSSLConnected;
-	bool mbIsReceivedInitialHttpHeader;
 	wchar_t mClientAddr[INET_ADDRSTRLEN];
 };

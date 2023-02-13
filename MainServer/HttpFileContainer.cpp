@@ -4,12 +4,13 @@ HttpFileContainer::HttpFileContainer()
 {
     mIndexPage.reserve(700); // 700 is index.html's byte size
     std::ifstream is{ DEFAULT_INDEX_LOCATION };
+    char tempBuffer = 0;
     std::string indexFileBuffer;
     indexFileBuffer.reserve(64);
 
     while (is.eof() != true)
     {
-        std::getline(is, indexFileBuffer);
+        tempBuffer = is.get();
 
         if (is.fail() == true)
         {
@@ -18,7 +19,7 @@ HttpFileContainer::HttpFileContainer()
         }
         else
         {
-            mIndexPage.append(indexFileBuffer);
+            mIndexPage.push_back(tempBuffer);
         }
     }
 
@@ -33,33 +34,22 @@ HttpFileContainer::HttpFileContainer()
 
     for (const auto& x : di)
     {
-        fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(x.path()), std::filesystem::file_size(x.path())));
+        fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(x.path(), std::ios::binary), std::filesystem::file_size(x.path())));
         fileNames.push_back(x.path().filename().string().c_str());
     }
 
-    char tempBuffer;
-
     for (uint16_t i = 0; i < fileNames.size(); i++)
     {
-        std::string* buffer = new std::string();
-        buffer->reserve(fileStreamsAndSize[i].second);
+        auto* fileBuffer = new std::vector<int8_t>();
+        fileBuffer->reserve(fileStreamsAndSize[i].second);
 
-        while (fileStreamsAndSize[i].first->eof() != true)
+        for (size_t j = 0; j < fileStreamsAndSize[i].second; j++)
         {
-            fileStreamsAndSize[i].first->get(tempBuffer);
-
-            if (fileStreamsAndSize[i].first->fail() == true)
-            {
-                break;
-            }
-            else
-            {
-                buffer->push_back(tempBuffer);
-            }
+            fileBuffer->push_back(fileStreamsAndSize[i].first->get());
         }
 
+        mBinaryFileContainer.insert(std::pair<std::string, std::vector<int8_t>*>(fileNames[i], fileBuffer));
         fileStreamsAndSize[i].first->close();
-        mJavascriptCssFiles.insert(std::pair<std::string, std::string*>(fileNames[i], buffer));
     }
 
     for (auto& x : fileStreamsAndSize)
@@ -70,18 +60,18 @@ HttpFileContainer::HttpFileContainer()
 
 HttpFileContainer::~HttpFileContainer()
 {
-    for (auto& x : mJavascriptCssFiles)
+    for (auto& x : mBinaryFileContainer)
     {
         delete x.second;
     }
 }
 
-const std::string* HttpFileContainer::GetIndexFile() const
+const std::vector<int8_t>* HttpFileContainer::GetIndexFile() const
 {
     return &mIndexPage;
 }
 
-std::string const* HttpFileContainer::GetFile(const std::string* fileName) const
+const std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
 {
-    return mJavascriptCssFiles.find(*fileName)->second;
+    return mBinaryFileContainer.find(*fileName)->second;
 }

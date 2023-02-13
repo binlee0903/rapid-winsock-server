@@ -17,6 +17,7 @@ public:
 	virtual HANDLE GetEventHandle() const = 0;
 
 	virtual int InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket) = 0;
+	virtual bool IsKeepAlive() const = 0;
 	virtual int ProcessRead() = 0;
 	virtual int ProcessWrite() = 0;
 	virtual int ProcessClose() = 0;

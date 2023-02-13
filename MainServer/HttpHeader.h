@@ -13,6 +13,7 @@ public:
 	HttpHeader& operator=(const HttpHeader& rhs) = delete;
 
 	void Add(std::string headerName, std::string headerText);
+	std::string& Get(std::string headerName);
 	void Remove(std::string headerName);
 
 private:

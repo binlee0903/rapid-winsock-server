@@ -38,9 +38,13 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 
 	mbIsKeepAlive = false;
 	mbIsSSLConnected = false;
-	mbIsReceivedInitialHttpHeader = false;
 
 	return 0;
+}
+
+bool HttpsClient::IsKeepAlive() const
+{
+	return mbIsKeepAlive;
 }
 
 void HttpsClient::printSocketError()
@@ -77,7 +81,12 @@ int HttpsClient::ProcessRead()
 	}
 
 	mHttpHelper->ParseHttpHeader(mHttpObject, content);
-	mbIsReceivedInitialHttpHeader = true;
+	std::string keepAlive = mHttpObject->GetHttpHeader()->Get("Connection");
+
+	if (keepAlive == "keep-alive")
+	{
+		mbIsKeepAlive = true;
+	}
 
 	// TODO : Check Http args
 
@@ -86,7 +95,7 @@ int HttpsClient::ProcessRead()
 
 int HttpsClient::ProcessWrite()
 {
-	std::string response;
+	std::vector<int8_t> response;
 	response.reserve(BUFFER_SIZE);
 	mHttpHelper->CreateHttpResponse(mHttpObject, response);
 
@@ -96,7 +105,7 @@ int HttpsClient::ProcessWrite()
 
 	while (returnValue <= 0)
 	{
-		returnValue = SSL_write_ex(mSSL, &response.c_str()[writeSize], response.length() - writeSize, &writeSize);
+		returnValue = SSL_write_ex(mSSL, &response[writeSize], response.size() - writeSize, &writeSize);
 		errorCode = SSL_get_error(mSSL, returnValue);
 
 		if (errorCode == SSL_ERROR_WANT_WRITE)

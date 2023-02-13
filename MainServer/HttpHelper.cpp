@@ -4,14 +4,14 @@ HttpHelper* HttpHelper::mInstance = nullptr;
 
 HttpHelper::HttpHelper()
     : mServerHttpVersion("HTTP/1.1")
-    , mFileContainer(new HttpFileContainer())
+    , mTextFileContainer(new HttpFileContainer())
 {
     
 }
 
 HttpHelper::~HttpHelper()
 {
-    delete mFileContainer;
+    delete mTextFileContainer;
 }
 
 HttpHelper* HttpHelper::GetHttpHelper()
@@ -73,44 +73,62 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::string& recv)
     httpObject->SetHttpHeader(httpHeader);
 }
 
-void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::string& response)
+void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
 {
     createHeader(httpObject, response);
 
     std::string& httpDest = httpObject->GetHttpDest();
-    
+    const std::vector<int8_t>* destFile = nullptr;
+
     if (httpDest == "/")
     {
-        const std::string* destFile = mFileContainer->GetIndexFile();
-        response += *destFile;
+        destFile = mTextFileContainer->GetIndexFile();
     }
     else
     {
         size_t offset = httpDest.rfind(L'/') + 1;
         std::string fileName = httpDest.substr(offset);
 
-        const std::string* destFile = mFileContainer->GetFile(&fileName);
-        response += *destFile;
+        if (fileName == "VBtn-a5c10e53.js")
+        {
+            assert(true);
+        }
+
+        destFile = mTextFileContainer->GetFile(&fileName);
     }
 
-    response.append("\r\n\r\n");
+    for (size_t i = 0; i < destFile->size(); i++)
+    {
+        response.push_back(destFile->at(i));
+    }
+
+    response.push_back('\r');
+    response.push_back('\n');
+    response.push_back('\r');
+    response.push_back('\n');
 }
 
-void HttpHelper::createHeader(HttpObject* httpObject, std::string& response)
+void HttpHelper::create404Response(HttpObject* httpObject, std::vector<int8_t>& response)
+{
+    response.clear();
+    appendStringToVector(HTTP_404_MESSAGE, sizeof(HTTP_404_MESSAGE) - 1, response);
+}
+
+void HttpHelper::createHeader(HttpObject* httpObject, std::vector<int8_t>& response)
 {
     switch (httpObject->GetHttpVersion())
     {
     case HttpObject::Http1_0:
-        response.append("HTTP/1.0 501 Not Implemented\r\n");
+        appendStringToVector(HTTP_501_MESSAGE, sizeof(HTTP_501_MESSAGE) - 1, response);
         break;
     case HttpObject::Http1_1:
-        response.append("HTTP/1.1 200 OK\r\n");
+        appendStringToVector(HTTP_200_MESSAGE, sizeof(HTTP_200_MESSAGE) - 1, response);
         break;
     case HttpObject::Http2_0:
-        response.append("HTTP/2.0 501 Not Implemented\r\n");
+        appendStringToVector(HTTP_501_MESSAGE, sizeof(HTTP_501_MESSAGE) - 1, response);
         break;
     case HttpObject::Http_UNKNOWN:
-        response.append("HTTP/1.1 503 Service Unavailable\r\n");
+        appendStringToVector(HTTP_503_MESSAGE, sizeof(HTTP_503_MESSAGE) - 1, response);
         break;
     default:
         assert(false);
@@ -121,34 +139,48 @@ void HttpHelper::createHeader(HttpObject* httpObject, std::string& response)
 
     if (httpDest == "/")
     {
-        const std::string* destFile = mFileContainer->GetIndexFile();
-        response += "Content-Type: text/html\r\n";
-        response += "Content-Length: ";
-        response += std::to_string(destFile->size());
-        response += "\r\n";
-        response += "Server: Winsock2\r\n\r\n";
+        const auto* destFile = mTextFileContainer->GetIndexFile();
+        appendStringToVector("Content-Type: text/html\r\n", 25, response);
+        appendStringToVector("Content-Length: ", 16, response);
+        std::string destFileSize = std::to_string(destFile->size());
+        appendStringToVector(destFileSize.c_str(), destFileSize.size(), response);
+        appendStringToVector("\r\n", 2, response);
+        appendStringToVector("Server: Winsock2\r\n\r\n", 20, response);
     }
     else
     {
         size_t offset = httpDest.rfind(L'/') + 1;
         std::string fileName = httpDest.substr(offset);
 
-        const std::string* destFile = mFileContainer->GetFile(&fileName);
-        response += "Content-Length: ";
-        response += std::to_string(destFile->size());
-        response += "\r\n";
-        response += "Server: Winsock2\r\n";
+        const auto* destFile = mTextFileContainer->GetFile(&fileName);
+        appendStringToVector("Content-Length: ", 16, response);
+        std::string destFileSize = std::to_string(destFile->size());
+        appendStringToVector(destFileSize.c_str(), destFileSize.size(), response);
+        appendStringToVector("\r\n", 2, response);
+        appendStringToVector("Server: Winsock2\r\n", 18, response);
 
         offset = httpDest.rfind(L'.') + 1;
         std::string ext = httpDest.substr(offset);
 
         if (ext == "js")
         {
-            response += "Content-Type: text/javascript\r\n\r\n";
+            appendStringToVector("Content-Type: text/javascript\r\n\r\n", 33, response);
+        }
+        else if (ext == "css")
+        {
+            appendStringToVector("Content-Type: text/css\r\n\r\n", 26, response);
         }
         else
         {
-            response += "Content-Type: text/css\r\n\r\n";
+            appendStringToVector("Content-Type: image/ico\r\n\r\n", 27, response);
         }
+    }
+}
+
+void HttpHelper::appendStringToVector(const char* str, int size, std::vector<int8_t>& v)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        v.push_back(str[i]);
     }
 }

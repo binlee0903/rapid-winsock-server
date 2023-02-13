@@ -22,12 +22,12 @@ HttpsServer::HttpsServer()
 	mSSLCTX = SSL_CTX_new(TLS_server_method());
 	assert(mSSLCTX != nullptr);
 
-	if (SSL_CTX_use_certificate_file(mSSLCTX, "C:\\Users\\egb35\\Documents\\cert\\server.crt", SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_certificate_file(mSSLCTX, SERVER_CERT_FILE, SSL_FILETYPE_PEM) <= 0)
 	{
 		std::wcout << L"SSL start up Failed(HttpsServer constructor)" << std::endl;
 	}
 
-	if (SSL_CTX_use_PrivateKey_file(mSSLCTX, "C:\\Users\\egb35\\Documents\\cert\\server.key", SSL_FILETYPE_PEM) <= 0)
+	if (SSL_CTX_use_PrivateKey_file(mSSLCTX, SERVER_KEY_FILE, SSL_FILETYPE_PEM) <= 0)
 	{
 		std::wcout << L"SSL start up Failed(HttpsServer constructor)" << std::endl;
 	}
@@ -281,6 +281,12 @@ uint32_t HttpsServer::processClient(void* clientSocketArg)
 			else if (retCode == 0)
 			{
 				client->ProcessWrite();
+
+				if (client->IsKeepAlive() == false)
+				{
+					client->ProcessClose();
+					break;
+				}
 			}
 		}
 

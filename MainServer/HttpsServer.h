@@ -22,6 +22,14 @@
 #include "HttpsClient.h"
 //#include "HTMLPageRouter.h"
 
+#ifdef _DEBUG || DEBUG
+	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.crt";
+	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.key";
+#else
+	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.crt.pem";
+	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.key.pem";
+#endif
+
 constexpr uint16_t MAX_CONNECTION_COUNT = 100;
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192 + 1; // \0
 constexpr uint16_t PORT_NUMBER = 443;
