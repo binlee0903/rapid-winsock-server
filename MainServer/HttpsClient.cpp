@@ -47,18 +47,8 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 
 	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
 
-	char buffer[INET_ADDRSTRLEN];
-	int32_t clientAddrLen = sizeof(buffer);
-	getpeername(mSocket, reinterpret_cast<sockaddr*>(&mClientSockAddr), &clientAddrLen);
-	InetNtopA(AF_INET, &mClientSockAddr.sin_addr, buffer, clientAddrLen);
-	mClientAddr = buffer;
-
-	AcquireSRWLockExclusive(mSRWLock);
-	std::cout << "Client Connected : " << mClientAddr << std::endl;
-	ReleaseSRWLockExclusive(mSRWLock);
-
 	auto blackList = mServer->GetBlackLists();
-	auto search = blackList->find(buffer);
+	auto search = blackList->find(mClientAddr);
 
 	if (search != blackList->end())
 	{
@@ -111,6 +101,17 @@ int HttpsClient::ProcessRead()
 	}
 
 	mHttpHelper->ParseHttpHeader(mHttpObject, content);
+
+	auto* header = mHttpObject->GetHttpHeader();
+	std::string& clientIP = header->Get("X-Forwarded-For");
+
+	if (clientIP.empty() == false)
+	{
+		AcquireSRWLockExclusive(mSRWLock);
+		std::cout << "Client IP : " << clientIP << " Method : " << mHttpObject->GetHttpMethod() << std::endl;
+		ReleaseSRWLockExclusive(mSRWLock);
+	}
+
 	std::string keepAlive = mHttpObject->GetHttpHeader()->Get("Connection");
 
 	if (keepAlive == "keep-alive")
