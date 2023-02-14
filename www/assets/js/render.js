@@ -7,49 +7,36 @@ function PutArticlesToList(articles)
         return;
     }
 
-    for (let i in articles.length)
+    for (let i in articles)
     {
-        container.innerHTML += `<div id="article-${i.index}" class="row gy-5 gx-4 g-xl-5">
+        container.innerHTML += `<div class="row gy-5 gx-4 g-xl-5">
             <div class="col-lg-6"> 
                 <article class="card post-card h-100 border-0 bg-transparent"> 
                     <div class="card-body"> 
-                        <a class="d-block" href="blog-single.html" title="${i.title}"> 
+                        <a class="d-block" href="blog-single.html?index=${articles[i].index}" title="${articles[i].title}"> 
                             <div class="post-image position-relative"> 
-                                <img class="w-100 h-auto rounded" src="${i.titleImagePath}" alt="${i.title}" width="970" height="500"> 
+                                <img class="w-100 h-auto rounded" src="${articles[i].titleImagePath}" alt="${articles[i].title}" width="970" height="500"> 
                             </div> 
                         </a> 
                         <ul class="card-meta list-inline mb-3"> 
                             <li class="list-inline-item mt-2"> 
                                 <i class="ti ti-calendar-event"></i> 
-                                <span>${i.date}</span> 
+                                <span>${articles[i].date}</span> 
                             </li> 
                         </ul> 
-                        <a id="article-${i.index}" class="d-block" href="blog-single.html" title="${i.title}"> 
+                        <a class="d-block" href="blog-single.html?index=${articles[i].index}" title="${articles[i].title}"> 
                             <h3 class="mb-3 post-title"> 
-                                ${i.title} 
+                                ${articles[i].title} 
                             </h3> 
                         </a>
                     </div> 
                 </article> 
-            </div> 
-            <div class="col-12 text-center"> 
-                <a class="btn btn-primary mt-5" href="blog.html" aria-label="View all posts"><i class="ti ti-new-section me-2"></i>View all posts</a> 
-            </div> 
+            </div>
         </div>`;
-
-        let article = document.querySelectorAll(`#article-${i.index}`);
-        article[0].addEventListener('click', () =>
-        {
-            location.href = `blog-single.html?index=${i.index}`;
-        });
-        article[1].addEventListener('click', () =>
-        {
-            location.href = `blog-single.html?index=${i.index}`;
-        });
     }
 }
 
-function PutArticlesToBlog(article)
+function PutArticleToBlog(article)
 {
     let container = document.querySelector('#blog-container');
 
@@ -78,7 +65,7 @@ function PutArticlesToBlog(article)
     </div>
     <div class="col-lg-8 post-content-block order-0 order-lg-2">
       <div class="content">
-        ${article.content}
+        ${article.article}
       </div>
     </div>
   </div>`;

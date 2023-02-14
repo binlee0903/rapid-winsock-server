@@ -26,9 +26,12 @@ public:
 	HttpsClient& operator=(HttpsClient& rhs) = delete;
 
 	virtual HANDLE GetEventHandle() const override;
+	virtual uint16_t GetRequestCount() const override;
+	virtual void IncreaseRequestCount() override;
+	virtual std::string& GetClientIP() override;
 
 	virtual int InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket) override;
-	virtual bool IsKeepAlive() const override;
+	virtual bool IsKeepAlive() override;
 	virtual int ProcessRead() override;
 	virtual int ProcessWrite() override;
 	virtual int ProcessClose() override;
@@ -53,5 +56,6 @@ private:
 
 	bool mbIsKeepAlive;
 	bool mbIsSSLConnected;
-	wchar_t mClientAddr[INET_ADDRSTRLEN];
+	uint16_t mRequestCount;
+	std::string mClientAddr;
 };

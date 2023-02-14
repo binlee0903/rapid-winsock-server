@@ -6,6 +6,7 @@ HttpsServer* HttpsServer::mServer = nullptr;
 HttpsServer::HttpsServer()
 	: mWsaData(new WSADATA())
 	, mSRWLock(new SRWLOCK())
+	, mTextFileContainer(new HttpFileContainer())
 	, mIsQuit(false)
 {
 	mServer = this;
@@ -186,6 +187,11 @@ HttpsServer* HttpsServer::GetServer()
 	return mServer;
 }
 
+HttpFileContainer* HttpsServer::GetHttpFileContainer()
+{
+	return mTextFileContainer;
+}
+
 HTMLPageRouter* HttpsServer::GetHTMLPageRouter()
 {
 	/*return mRouter;*/
@@ -200,6 +206,11 @@ SSL* HttpsServer::GetSSL() const
 SSL_CTX* HttpsServer::GetSSLCTX() const
 {
 	return mSSLCTX;
+}
+
+std::unordered_set<std::string>* HttpsServer::GetBlackLists()
+{
+	return &mBlackLists;
 }
 
 void HttpsServer::printSocketError()
@@ -270,6 +281,8 @@ uint32_t HttpsServer::processClient(void* clientSocketArg)
 		WSAWaitForMultipleEvents(1, &clientEventHandle, false, INFINITE, false);
 		WSAEnumNetworkEvents(clientSocket, clientEventHandle, &netEvents);
 
+		client->IncreaseRequestCount();
+
 		if (netEvents.lNetworkEvents & FD_READ)
 		{
 			int retCode = client->ProcessRead();
@@ -288,6 +301,12 @@ uint32_t HttpsServer::processClient(void* clientSocketArg)
 					break;
 				}
 			}
+		}
+
+		if (client->GetRequestCount() > 100)
+		{
+			mServer->mBlackLists.insert(client->GetClientIP());
+			client->ProcessClose();
 		}
 
 		if (netEvents.lNetworkEvents & FD_CLOSE)

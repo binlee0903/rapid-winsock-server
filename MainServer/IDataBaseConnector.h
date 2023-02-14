@@ -8,7 +8,7 @@
 class IDataBaseConnector
 {
 public:
-	virtual int32_t Select(std::string* tableName, uint32_t index, ArticleObject& articleObject) const = 0;
+	virtual int32_t GetArticle(std::string* tableName, uint32_t index, std::string& articleObject) const = 0;
 	virtual int32_t Insert(std::string* tableName, std::string* content) = 0;
 	virtual int32_t Update(std::string* tableName, std::string* content, uint32_t index) = 0;
 	virtual int32_t Delete(std::string* tableName, uint32_t index) = 0;

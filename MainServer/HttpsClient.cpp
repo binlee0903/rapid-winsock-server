@@ -14,12 +14,27 @@ HANDLE HttpsClient::GetEventHandle() const
 	return mEventHandle;
 }
 
+uint16_t HttpsClient::GetRequestCount() const
+{
+	return mRequestCount;
+}
+
+void HttpsClient::IncreaseRequestCount()
+{
+	mRequestCount++;
+}
+
+std::string& HttpsClient::GetClientIP()
+{
+	return mClientAddr;
+}
+
 int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket)
 {
 	mServer = server;
-	mHttpHelper = HttpHelper::GetHttpHelper();
+	mRequestCount = 0;
+	mHttpHelper = HttpHelper::GetHttpHelper(mServer->GetHttpFileContainer());
 	mSSLCTX = mServer->GetSSLCTX();
-	/*mRouter = mServer->GetHTMLPageRouter();*/
 	mSRWLock = srwLock;
 	mHttpObject = new HttpObject();
 	mEventHandle = WSACreateEvent();
@@ -32,9 +47,24 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 
 	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
 
-	int32_t clientAddrLen = sizeof(mClientAddr);
+	char buffer[INET_ADDRSTRLEN];
+	int32_t clientAddrLen = sizeof(buffer);
 	getpeername(mSocket, reinterpret_cast<sockaddr*>(&mClientSockAddr), &clientAddrLen);
-	InetNtop(AF_INET, &mClientSockAddr.sin_addr, mClientAddr, sizeof(mClientAddr) / 2);
+	InetNtopA(AF_INET, &mClientSockAddr.sin_addr, buffer, clientAddrLen);
+	mClientAddr = buffer;
+
+	AcquireSRWLockExclusive(mSRWLock);
+	std::cout << "Client Connected : " << mClientAddr << std::endl;
+	ReleaseSRWLockExclusive(mSRWLock);
+
+	auto blackList = mServer->GetBlackLists();
+	auto search = blackList->find(buffer);
+
+	if (search != blackList->end())
+	{
+		closesocket(mSocket);
+		return -1;
+	}
 
 	mbIsKeepAlive = false;
 	mbIsSSLConnected = false;
@@ -42,7 +72,7 @@ int HttpsClient::InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clie
 	return 0;
 }
 
-bool HttpsClient::IsKeepAlive() const
+bool HttpsClient::IsKeepAlive()
 {
 	return mbIsKeepAlive;
 }
@@ -87,6 +117,10 @@ int HttpsClient::ProcessRead()
 	{
 		mbIsKeepAlive = true;
 	}
+	else
+	{
+		mbIsKeepAlive = false;
+	}
 
 	// TODO : Check Http args
 
@@ -126,6 +160,10 @@ int HttpsClient::ProcessWrite()
 
 int HttpsClient::ProcessClose()
 {
+	AcquireSRWLockExclusive(mSRWLock);
+	std::cout << "Client Disconnected : " << mClientAddr << std::endl;
+	ReleaseSRWLockExclusive(mSRWLock);
+
 	delete this;
 	return 0;
 }
@@ -138,57 +176,45 @@ int HttpsClient::ProcessOOB()
 
 uint32_t HttpsClient::receiveData(std::string* content)
 {
-	char buffer[BUFFER_SIZE];
+	uint8_t buffer[BUFFER_SIZE];
 
-	u_long readLen = 0;
-	int recvLen = 0;
+	u_long avaliableDataSize = 0;
+	u_long readDataSize = 0;
+	int32_t returnValue = 0;
+	int32_t errorCode = 0;
+	size_t recvLen = 0;
 	int recvLenSum = 0;
+
+	int retValue = ioctlsocket(mSocket, FIONREAD, &avaliableDataSize);
+	if (retValue != 0)
+	{
+		printSocketError();
+		return 0;
+	}
+
+	if (avaliableDataSize == 0 || avaliableDataSize == 24)
+	{
+		return 0;
+	}
 
 	do
 	{
-		int retValue = ioctlsocket(mSocket, FIONREAD, &readLen);
-		if (retValue != 0)
-		{
-			printSocketError();
-			break;
-		}
-
-		if (readLen == 0)
-		{
-			break;
-		}
-
-		if (readLen > BUFFER_SIZE)
-		{
-			readLen = BUFFER_SIZE;
-		}
-
-
-		//recvLen = recv(clientSocket, buffer, readLen, 0);
-		recvLen = SSL_read(mSSL, buffer, readLen);
+		ZeroMemory(buffer, sizeof(buffer));
+		returnValue = SSL_read_ex(mSSL, buffer, BUFFER_SIZE, &recvLen);
+		errorCode = SSL_get_error(mSSL, returnValue);
 
 		if (recvLen != 0)
 		{
-			for (uint16_t i = 0; i < readLen; ++i)
+			for (uint32_t i = 0; i < recvLen; ++i)
 			{
-				if (buffer[i] == '\r' && buffer[i + 1] == '\n')
-				{
-					if (buffer[i + 2] == '\r' && buffer[i + 3] == '\n')
-					{
-						content->push_back(L'\0');
-						break;
-					}
-					content->push_back(buffer[i]);
-				}
-				else
-				{
-					content->push_back(buffer[i]);
-				}
+				content->push_back(buffer[i]);
 			}
 
 			recvLenSum += recvLen;
 		}
-	} while (recvLen != 0);
+
+		avaliableDataSize = SSL_pending(mSSL);
+	} while (avaliableDataSize != 0);
 
 	return recvLenSum;
 }

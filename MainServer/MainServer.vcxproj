@@ -154,7 +154,9 @@
     <ClCompile Include="HttpHeader.cpp" />
     <ClCompile Include="HttpHelper.cpp" />
     <ClCompile Include="HttpObject.cpp" />
+    <ClCompile Include="IFileContainer.cpp" />
     <ClCompile Include="IServer.cpp" />
+    <ClCompile Include="JsonHelper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="HttpsServer.cpp" />
     <ClCompile Include="sqlite3.c" />
@@ -173,7 +175,10 @@
     <ClInclude Include="HttpHelper.h" />
     <ClInclude Include="HttpObject.h" />
     <ClInclude Include="HttpsServer.h" />
+    <ClInclude Include="IFileContainer.h" />
     <ClInclude Include="IServer.h" />
+    <ClInclude Include="JSON.h" />
+    <ClInclude Include="JsonHelper.h" />
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="SQLiteConnector.h" />
     <ClInclude Include="SQLiteSQLStatements.h" />

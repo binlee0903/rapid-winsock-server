@@ -3,6 +3,7 @@
 SQLiteConnector::SQLiteConnector()
 	: mDataBase(nullptr)
 	, mDBStateMentSelect(nullptr)
+	, mDBStateMentGetArticles(nullptr)
 	, mDBStateMentInsert(nullptr)
 	, mDBStateMentUpdate(nullptr)
 	, mDBStateMentDelete(nullptr)
@@ -10,48 +11,100 @@ SQLiteConnector::SQLiteConnector()
 	int returnCode = sqlite3_open(SQLITE_DB_LOCATION, &mDataBase);
 	assert(returnCode == SQLITE_OK);
 
-	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Select, sizeof(SQLiteSQLStatements::Select), &mDBStateMentSelect, nullptr);
+	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::GetArticle, sizeof(SQLiteSQLStatements::GetArticle), &mDBStateMentSelect, nullptr);
+	assert(returnCode == SQLITE_OK);
+	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::GetArticles, sizeof(SQLiteSQLStatements::GetArticles), &mDBStateMentGetArticles, nullptr);
 	assert(returnCode == SQLITE_OK);
 	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Insert, sizeof(SQLiteSQLStatements::Insert), &mDBStateMentInsert, nullptr);
 	assert(returnCode == SQLITE_OK);
-	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Update, sizeof(SQLiteSQLStatements::Update), &mDBStateMentUpdate, nullptr);
-	assert(returnCode == SQLITE_OK);
-	returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Delete, sizeof(SQLiteSQLStatements::Delete), &mDBStateMentDelete, nullptr);
-	assert(returnCode == SQLITE_OK);
+	//returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Update, sizeof(SQLiteSQLStatements::Update), &mDBStateMentUpdate, nullptr);
+	//assert(returnCode == SQLITE_OK);
+	//returnCode = sqlite3_prepare_v2(mDataBase, SQLiteSQLStatements::Delete, sizeof(SQLiteSQLStatements::Delete), &mDBStateMentDelete, nullptr);
+	//assert(returnCode == SQLITE_OK);
 }
 
 SQLiteConnector::~SQLiteConnector()
 {
 	sqlite3_close(mDataBase);
+
+	int returnCode = sqlite3_finalize(mDBStateMentSelect);
+	assert(returnCode == SQLITE_OK);
 }
 
-int32_t SQLiteConnector::Select(std::string* tableName, uint32_t index, ArticleObject& articleObject) const
+int32_t SQLiteConnector::GetArticle(std::string* tableName, uint32_t index, std::string& articleObject) const
 {
 	
 	int returnCode = 0;
-	returnCode = sqlite3_reset(mDBStateMentSelect);
-	assert(returnCode == SQLITE_OK);
-
-	returnCode = sqlite3_bind_text(mDBStateMentSelect, 0, tableName->c_str(), tableName->size(), SQLITE_TRANSIENT);
-	assert(returnCode == SQLITE_OK);
-
 	returnCode = sqlite3_bind_int(mDBStateMentSelect, 1, index);
 	assert(returnCode == SQLITE_OK);
 
 	returnCode = sqlite3_step(mDBStateMentSelect);
-	if (returnCode == SQLITE_ROW)
+	if (returnCode == SQLITE_DONE || returnCode == SQLITE_ROW)
 	{
-		articleObject.INDEX = sqlite3_column_int(mDBStateMentSelect, 0);
-		const unsigned char* tempContent = sqlite3_column_text(mDBStateMentSelect, 1);
+		int index = sqlite3_column_int(mDBStateMentSelect, 0);
+		const unsigned char* title = sqlite3_column_text(mDBStateMentSelect, 1);
+		const unsigned char* imagePath = sqlite3_column_text(mDBStateMentSelect, 2);
+		const unsigned char* date = sqlite3_column_text(mDBStateMentSelect, 3);
+		const unsigned char* article = sqlite3_column_text(mDBStateMentSelect, 4);
 
-		while (*tempContent++)
+
+		articleObject.append("{\n");
+		JsonHelper::AppendJsonToString("title", reinterpret_cast<const char*>(title), articleObject);
+		JsonHelper::AppendJsonToString("titleImagePath", reinterpret_cast<const char*>(imagePath), articleObject);
+		JsonHelper::AppendJsonToString("date", reinterpret_cast<const char*>(date), articleObject);
+		JsonHelper::AppendJsonToString("article", reinterpret_cast<const char*>(article), articleObject);
+		articleObject.pop_back();
+		articleObject.append("}");
+	}
+	else
+	{
+		sqlite3_reset(mDBStateMentSelect);
+		return -1;
+	}
+
+	sqlite3_reset(mDBStateMentSelect);
+	return 0;
+}
+
+int32_t SQLiteConnector::GetArticles(uint32_t index, std::string& articles) const
+{
+	int returnCode = 0;
+	returnCode = sqlite3_bind_int(mDBStateMentGetArticles, 1, index * 6);
+	assert(returnCode == SQLITE_OK);
+
+	articles.append("[");
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		returnCode = sqlite3_step(mDBStateMentGetArticles);
+		if (returnCode == SQLITE_DONE || returnCode == SQLITE_ROW)
 		{
-			articleObject.ARTICLE.push_back(*tempContent);
+			int index = sqlite3_column_int(mDBStateMentGetArticles, 0);
+
+			if (index == 0)
+			{
+				break;
+			}
+
+			char buffer[10];
+			_itoa_s(index, buffer, 10);
+			const unsigned char* title = sqlite3_column_text(mDBStateMentGetArticles, 1);
+			const unsigned char* imagePath = sqlite3_column_text(mDBStateMentGetArticles, 2);
+			const unsigned char* date = sqlite3_column_text(mDBStateMentGetArticles, 3);
+
+			articles.append("{");
+			JsonHelper::AppendJsonToString("index", buffer, articles);
+			JsonHelper::AppendJsonToString("title", reinterpret_cast<const char*>(title), articles);
+			JsonHelper::AppendJsonToString("titleImagePath", reinterpret_cast<const char*>(imagePath), articles);
+			JsonHelper::AppendJsonToString("date", reinterpret_cast<const char*>(date), articles);
+			articles.pop_back();
+			articles.append("},");
 		}
 	}
 
-	returnCode = sqlite3_finalize(mDBStateMentSelect);
-	assert(returnCode == SQLITE_OK);
+	sqlite3_reset(mDBStateMentGetArticles);
+	articles.pop_back();
+	articles.append("]");
 	return 0;
 }
 

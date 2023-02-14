@@ -62,36 +62,9 @@ let articleNumber = 0;
         navbarPinUnpin();
         stickyNavigation();
       };
-
-      GetArticlesFromServer(0);
     },
     false
   );
-
-  // search-popup
-  function searchPopup() {
-    let searchBlock = document.querySelector(".search-block");
-    let searchOpen = document.querySelectorAll('[data-toggle="search"]');
-    let searchClose = document.querySelector('[data-toggle="search-close"]');
-    searchOpen.forEach((so) => {
-      so.addEventListener("click", function () {
-        searchBlock.classList.add("is-visible");
-        setTimeout(() => {
-          document.querySelector('[aria-label="search-query"]').focus();
-        }, 250);
-      });
-    });
-    searchClose.addEventListener("click", function () {
-      searchBlock.classList.remove("is-visible");
-      document.querySelector('[aria-label="search-query"]').value = "";
-      setTimeout(() => {
-        document.querySelector("#js-search-results-container").innerHTML = "";
-        document.querySelector("#js-search-results-container").style.display =
-          "none";
-      }, 250);
-    });
-  }
-  searchPopup();
 
   // menuHumBurger icon toggle Init
   function menuHumBurgerIcon() {

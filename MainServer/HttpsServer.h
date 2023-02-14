@@ -10,6 +10,7 @@
 #include <cstdint>
 
 #include <vector>
+#include <unordered_set>
 #include <process.h>
 #include <synchapi.h>
 
@@ -18,7 +19,6 @@
 #include <openssl/ssl3.h>
 #include <openssl/err.h>
 
-#include "HttpHelper.h"
 #include "HttpsClient.h"
 //#include "HTMLPageRouter.h"
 
@@ -41,9 +41,11 @@ public:
 	virtual int32_t Run();
 
 	static HttpsServer* GetServer();
+	virtual HttpFileContainer* GetHttpFileContainer() override;
 	virtual HTMLPageRouter* GetHTMLPageRouter() override;
 	virtual SSL* GetSSL() const override;
 	virtual SSL_CTX* GetSSLCTX() const override;
+	virtual std::unordered_set<std::string>* GetBlackLists() override;
 private:
 	HttpsServer();
 	~HttpsServer();
@@ -66,11 +68,13 @@ private:
 	std::vector<IClient*> mClients;
 
 	std::vector<SOCKET> mClientSockets;
+	std::unordered_set<std::string> mBlackLists;
     std::vector<HANDLE> mThreadHandles;
 
 	sockaddr_in mServerAddr;
 	WSADATA* mWsaData;
 	SRWLOCK* mSRWLock;
+	HttpFileContainer* mTextFileContainer;
 
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;

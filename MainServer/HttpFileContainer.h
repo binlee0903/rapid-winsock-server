@@ -1,30 +1,33 @@
 #pragma once
 
-#include <string>
 #include <fstream>
 #include <filesystem>
-#include <vector>
 #include <unordered_map>
 
+#include "IFileContainer.h"
 #include "HttpObject.h"
 #include "base64.h"
 
 #ifdef _DEBUG || DEBUG
-	constexpr char DEFAULT_ASSETS_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\dist\\assets";
-	constexpr char DEFAULT_INDEX_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\dist\\index.html";
+	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www";
+	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\css";
+	constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\images";
+	constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\js";
 #else
-	constexpr char DEFAULT_ASSETS_LOCATION[] = "C:\\Users\\Administrator\\Documents\\dist\\assets";
-	constexpr char DEFAULT_INDEX_LOCATION[] = "C:\\Users\\Administrator\\Documents\\dist\\index.html";
+	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www";
+	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www\\assets\\css";
+	constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www\\assets\\images";
+	constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www\\assets\\js";
 #endif
 
-class HttpFileContainer final
+class HttpFileContainer final : public IFileContainer
 {
 public:
 	HttpFileContainer();
-	~HttpFileContainer();
+	virtual ~HttpFileContainer();
 
-	const std::vector<int8_t>* GetIndexFile() const;
-	const std::vector<int8_t>* GetFile(const std::string* fileName) const;
+	const std::vector<int8_t>* GetIndexFile() const override;
+	const std::vector<int8_t>* GetFile(const std::string* fileName) const override;
 
 private:
 	std::vector<int8_t> mIndexPage;

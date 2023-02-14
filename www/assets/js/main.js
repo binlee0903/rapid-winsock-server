@@ -1,7 +1,8 @@
 (function main()
 {
-    
-
-    let articleList = GetArticlesFromServer();
-    PutArticlesToList(articleList);
+    GetArticlesFromServer(0)
+    .then((data) =>
+    {
+        PutArticlesToList(data);
+    });
 })();

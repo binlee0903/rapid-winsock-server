@@ -57,6 +57,12 @@
     <ClCompile Include="base64.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="JsonHelper.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="IFileContainer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpsServer.h">
@@ -105,6 +111,15 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="base64.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="JsonHelper.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="JSON.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="IFileContainer.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

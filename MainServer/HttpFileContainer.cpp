@@ -2,40 +2,27 @@
 
 HttpFileContainer::HttpFileContainer()
 {
-    mIndexPage.reserve(700); // 700 is index.html's byte size
-    std::ifstream is{ DEFAULT_INDEX_LOCATION };
-    char tempBuffer = 0;
-    std::string indexFileBuffer;
-    indexFileBuffer.reserve(64);
-
-    while (is.eof() != true)
-    {
-        tempBuffer = is.get();
-
-        if (is.fail() == true)
-        {
-            is.clear();
-            is.ignore(LLONG_MAX, '\n');
-        }
-        else
-        {
-            mIndexPage.push_back(tempBuffer);
-        }
-    }
-
-    is.close();
-
-    std::filesystem::directory_iterator di(DEFAULT_ASSETS_LOCATION);
+    std::vector<std::filesystem::directory_iterator> wwwFileLocations;
+    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_HTML_LOCATION));
+    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_CSS_LOCATION));
+    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_IMAGE_LOCATION));
+    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_JAVASCRIPT_LOCATION));
 
     std::vector<std::pair<std::ifstream*, uintmax_t>> fileStreamsAndSize;
     std::vector<std::string> fileNames;
     fileStreamsAndSize.reserve(16);
     fileNames.reserve(16);
 
-    for (const auto& x : di)
+    for (const auto& x : wwwFileLocations)
     {
-        fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(x.path(), std::ios::binary), std::filesystem::file_size(x.path())));
-        fileNames.push_back(x.path().filename().string().c_str());
+        for (const auto& y : x)
+        {
+            if (y.is_directory() == false)
+            {
+                fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(y.path(), std::ios::binary), std::filesystem::file_size(y.path())));
+                fileNames.push_back(y.path().filename().string().c_str());
+            }
+        }
     }
 
     for (uint16_t i = 0; i < fileNames.size(); i++)
@@ -68,10 +55,17 @@ HttpFileContainer::~HttpFileContainer()
 
 const std::vector<int8_t>* HttpFileContainer::GetIndexFile() const
 {
-    return &mIndexPage;
+    return mBinaryFileContainer.find("index.html")->second;
 }
 
 const std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
 {
-    return mBinaryFileContainer.find(*fileName)->second;
+    auto file = mBinaryFileContainer.find(*fileName);
+
+    if (file == std::end(mBinaryFileContainer))
+    {
+        return nullptr;
+    }
+
+    return file->second;
 }
