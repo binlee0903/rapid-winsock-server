@@ -103,12 +103,12 @@ int HttpsClient::ProcessRead()
 	mHttpHelper->ParseHttpHeader(mHttpObject, content);
 
 	auto* header = mHttpObject->GetHttpHeader();
-	std::string& clientIP = header->Get("X-Forwarded-For");
+	mClientAddr = header->Get("X-Forwarded-For");
 
-	if (clientIP.empty() == false)
+	if (mClientAddr.empty() == false)
 	{
 		AcquireSRWLockExclusive(mSRWLock);
-		std::cout << "Client IP : " << clientIP << " Method : " << mHttpObject->GetHttpMethod() << std::endl;
+		std::cout << "Client IP : " << mClientAddr << " Method : " << mHttpObject->GetHttpMethod() << std::endl;
 		ReleaseSRWLockExclusive(mSRWLock);
 	}
 
