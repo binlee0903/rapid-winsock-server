@@ -7,9 +7,10 @@
 #include <cassert>
 #include <iostream>
 
-#include "HTMLPageRouter.h"
-#include "IFileContainer.h"
+#include "HttpRouter.h"
+#include "HttpFileContainer.h"
 #include "SQLiteConnector.h"
+#include "JSON.h"
 
 const char HTTP_501_MESSAGE[] = "HTTP/1.0 501 Not Implemented\r\n";
 const char HTTP_404_MESSAGE[] = "HTTP/1.1 404 Not Found\r\n";
@@ -19,14 +20,13 @@ const char HTTP_503_MESSAGE[] = "HTTP/1.1 503 Service Unavailable\r\n";
 class HttpHelper final
 {
 public:
-	HttpHelper() = delete;
-	HttpHelper(IFileContainer* fileContainer);
+	HttpHelper();
 	HttpHelper& operator=(const HttpHelper& rhs) = delete;
 	HttpHelper(const HttpHelper& rhs) = delete;
 
 	~HttpHelper();
 
-	static HttpHelper* GetHttpHelper(IFileContainer* fileContainer);
+	static HttpHelper* GetHttpHelper(HttpFileContainer* fileContainer);
 	static void DeleteHttpHelper();
 
 	void ParseHttpHeader(HttpObject* httpObject, std::string& recv);
@@ -41,7 +41,6 @@ private:
 	static HttpHelper* mInstance;
 	const char mServerHttpVersion[9];
 	SRWLOCK* mSRWLock;
-	IFileContainer* mTextFileContainer;
 	SQLiteConnector* mDataBase;
 };
 

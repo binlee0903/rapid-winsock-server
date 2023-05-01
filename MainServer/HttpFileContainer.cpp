@@ -20,7 +20,7 @@ HttpFileContainer::HttpFileContainer()
             if (y.is_directory() == false)
             {
                 fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(y.path(), std::ios::binary), std::filesystem::file_size(y.path())));
-                fileNames.push_back(y.path().filename().string().c_str());
+                fileNames.push_back(y.path().filename().string());
             }
         }
     }
@@ -35,7 +35,7 @@ HttpFileContainer::HttpFileContainer()
             fileBuffer->push_back(fileStreamsAndSize[i].first->get());
         }
 
-        mBinaryFileContainer.insert(std::pair<std::string, std::vector<int8_t>*>(fileNames[i], fileBuffer));
+        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mStringHash(fileNames[i]), fileBuffer));
         fileStreamsAndSize[i].first->close();
     }
 
@@ -53,14 +53,9 @@ HttpFileContainer::~HttpFileContainer()
     }
 }
 
-const std::vector<int8_t>* HttpFileContainer::GetIndexFile() const
+std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
 {
-    return mBinaryFileContainer.find("index.html")->second;
-}
-
-const std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
-{
-    auto file = mBinaryFileContainer.find(*fileName);
+    auto file = mBinaryFileContainer.find(mStringHash(*fileName));
 
     if (file == std::end(mBinaryFileContainer))
     {

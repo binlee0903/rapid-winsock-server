@@ -1,3 +1,12 @@
+/*****************************************************************//**
+ * \file   HttpsServer.h
+ * \brief  https server that support tls1.3,
+ *         this class is singleton
+ * 
+ * \author binlee0903
+ * \date   February 2023
+ *********************************************************************/
+
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
@@ -20,9 +29,9 @@
 #include <openssl/err.h>
 
 #include "HttpsClient.h"
-//#include "HTMLPageRouter.h"
+#include "HttpRouter.h"
 
-#ifdef _DEBUG || DEBUG
+#ifdef _DEBUG
 	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.crt";
 	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.key";
 #else
@@ -30,53 +39,54 @@
 	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.key.pem";
 #endif
 
-constexpr uint16_t MAX_CONNECTION_COUNT = 100;
-constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192 + 1; // \0
-constexpr uint16_t PORT_NUMBER = 443;
+constexpr uint16_t MAX_CONNECTION_COUNT = 1000; // max clients count
+constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
+constexpr uint16_t HTTP_PORT_NUMBER = 80;
+constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
 
 class HttpsServer final : public IServer
 {
 public:
-	virtual int32_t Run();
-
+	/**
+	 * return https server's pointer, if server is not constructed, creates it
+	 *
+	 * \return https server's pointer
+	 */
 	static HttpsServer* GetServer();
-	virtual HttpFileContainer* GetHttpFileContainer() override;
-	virtual HTMLPageRouter* GetHTMLPageRouter() override;
-	virtual SSL* GetSSL() const override;
-	virtual SSL_CTX* GetSSLCTX() const override;
-	virtual std::unordered_set<std::string>* GetBlackLists() override;
+
+	/**
+	 * if this function is called, server will start listen
+	 * 
+	 * \return 0 when q is pressed in console, but if this function return -1, there was an error
+	 */
+	virtual int32_t Run() override;
+private:
+	static uint32_t checkQuitMessage(void*);
 private:
 	HttpsServer();
 	~HttpsServer();
 
-	static uint32_t CheckQuitMessage(void*);
-    static uint32_t processClient(void* clientSocket);
-	SOCKET processAccept();
-
+	void runHttpServer();
+	void sendRedirectMessage(socket_t clientSocket);
 	void openSocket();
-	void closeSocket(SOCKET socket);
 	void printSocketError();
+
+	socket_t processAccept(socket_t socket);
 private:
-	bool mIsQuit;
-
 	static HttpsServer* mServer;
-	/*static HTMLPageRouter* mRouter;*/
-	uint32_t mConnectionCount;
-	SOCKET mSocket;
 
-	std::vector<IClient*> mClients;
+	bool mbIsQuitButtonPressed;
 
-	std::vector<SOCKET> mClientSockets;
+	socket_t mHttpSocket;
+	socket_t mHttpsSocket;
+	std::vector<HttpsClient*> mClients;
 	std::unordered_set<std::string> mBlackLists;
-    std::vector<HANDLE> mThreadHandles;
 
-	sockaddr_in mServerAddr;
-	WSADATA* mWsaData;
 	SRWLOCK* mSRWLock;
-	HttpFileContainer* mTextFileContainer;
-
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
+
+	HttpRouter* mRouter;
 };
 

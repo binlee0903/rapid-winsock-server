@@ -1,14 +1,8 @@
 #include "HttpObject.h"
 
 HttpObject::HttpObject()
-	: mHttpHeader(nullptr)
-	, mHttpVersion(Http_UNKNOWN)
+	: mHttpVersion(Http_UNKNOWN)
 {
-}
-
-HttpObject::~HttpObject()
-{
-	delete mHttpHeader;
 }
 
 std::string& HttpObject::GetHttpMethod()
@@ -60,13 +54,12 @@ void HttpObject::SetHttpVersion(std::string& httpVersion)
 	}
 }
 
-HttpHeader* HttpObject::GetHttpHeader()
+std::unordered_map<std::string, std::string>& HttpObject::GetHttpHeaders()
 {
-	return mHttpHeader;
+	return mHttpHeaders;
 }
 
-void HttpObject::SetHttpHeader(HttpHeader* httpHeader)
+void HttpObject::InsertHttpHeader(std::string& key, std::string& value)
 {
-	mHttpHeader = httpHeader;
-	httpHeader = nullptr;
+	mHttpHeaders.insert({key, value});
 }

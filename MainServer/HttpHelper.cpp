@@ -2,9 +2,8 @@
 
 HttpHelper* HttpHelper::mInstance = nullptr;
 
-HttpHelper::HttpHelper(IFileContainer* fileContainer)
+HttpHelper::HttpHelper()
 	: mServerHttpVersion("HTTP/1.1")
-	, mTextFileContainer(fileContainer)
 	, mDataBase(new SQLiteConnector())
 	, mSRWLock(new SRWLOCK())
 {
@@ -14,10 +13,9 @@ HttpHelper::HttpHelper(IFileContainer* fileContainer)
 HttpHelper::~HttpHelper()
 {
 	delete mSRWLock;
-	delete mTextFileContainer;
 }
 
-HttpHelper* HttpHelper::GetHttpHelper(IFileContainer* fileContainer)
+HttpHelper* HttpHelper::GetHttpHelper(HttpFileContainer* fileContainer)
 {
 	if (mInstance == nullptr)
 	{
@@ -39,8 +37,6 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::string& recv)
 	constexpr uint16_t BUFFER_BASIC_SIZE = 32;
 
 	std::istringstream is{ recv };
-
-	HttpHeader* httpHeader = new HttpHeader();
 	std::string firstBuffer;
 	std::string secondBuffer;
 	firstBuffer.reserve(BUFFER_BASIC_SIZE);
@@ -49,19 +45,9 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::string& recv)
 	// read first line of http text
 	std::getline(is, firstBuffer, BASIC_DELIM);
 	httpObject->SetHttpMethod(firstBuffer);
+
 	std::getline(is, firstBuffer, BASIC_DELIM);
-
-	size_t offset = firstBuffer.find('?');
-	std::string temp = firstBuffer.substr(0, offset);
-
-	if (offset != std::string::npos)
-	{
-		httpObject->SetHttpDest(temp);
-	}
-	else
-	{
-		httpObject->SetHttpDest(firstBuffer);
-	}
+	httpObject->SetHttpDest(firstBuffer);
 
 	std::getline(is, firstBuffer);
 	httpObject->SetHttpVersion(firstBuffer);
@@ -87,11 +73,9 @@ void HttpHelper::ParseHttpHeader(HttpObject* httpObject, std::string& recv)
 			is.ignore();
 			std::getline(is, secondBuffer);
 			size_t offset = secondBuffer.find('\r');
-			httpHeader->Add(firstBuffer, secondBuffer.substr(0, offset));
+			httpObject->GetHttpHeaders().insert(firstBuffer, secondBuffer.substr(0, offset));
 		}
 	}
-
-	httpObject->SetHttpHeader(httpHeader);
 }
 
 void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
@@ -99,15 +83,11 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>&
 	std::string& httpDest = httpObject->GetHttpDest();
 	const std::vector<int8_t>* destFile = nullptr;
 
-	if (httpDest == "/" || httpDest == "index.html")
-	{
-		destFile = mTextFileContainer->GetIndexFile();
-	}
-	else if (httpDest == "/getArticle")
+	if (httpDest == "/getArticle")
 	{
 		std::string tableName = "ARTICLES";
 		std::string article;
-		if (mDataBase->GetArticle(&tableName, std::stoi(httpObject->GetHttpHeader()->Get("Article-Number")), article) == -1)
+		if (mDataBase->GetArticle(&tableName, std::stoi(httpObject->GetHttpHeaders().at("Article-Number")), article) == -1)
 		{
 			appendStringToVector(HTTP_404_MESSAGE, sizeof(HTTP_404_MESSAGE) - 1, response);
 			return;
@@ -137,7 +117,7 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>&
 		std::string tableName = "ARTICLES";
 		std::string articles;
 		AcquireSRWLockExclusive(mSRWLock);
-		if (mDataBase->GetArticles(std::stoi(httpObject->GetHttpHeader()->Get("Page-Index")), articles) != 0)
+		if (mDataBase->GetArticles(std::stoi(httpObject->GetHttpHeaders().at("Page-Index")), articles) != 0)
 		{
 			appendStringToVector(HTTP_404_MESSAGE, sizeof(HTTP_404_MESSAGE) - 1, response);
 			return;

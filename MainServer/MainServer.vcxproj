@@ -24,6 +24,7 @@
     <ProjectGuid>{8f78cc93-c344-4589-8d29-0eebd1e23743}</ProjectGuid>
     <RootNamespace>MainServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>rapid-winsock-server</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,12 +72,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>C:\Program Files\OpenSSL\bin;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>C:\Users\egb35\Documents\vcpkg\packages\jsoncpp_x86-windows\include\json;C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3400000;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ExternalIncludePath>C:\Program Files\OpenSSL\include;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>C:\Users\egb35\Documents\vcpkg\packages\jsoncpp_x86-windows\include\json;C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3400000;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -122,7 +125,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;sqlite3.lib;jsoncpp.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,50 +144,36 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;sqlite3.lib;jsoncpp.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="base64.cpp" />
-    <ClCompile Include="HTMLPageRouter.cpp" />
+    <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="HttpRouter.cpp" />
     <ClCompile Include="HttpFileContainer.cpp" />
-    <ClCompile Include="IDataBaseConnector.cpp" />
-    <ClCompile Include="IClient.cpp" />
     <ClCompile Include="HttpsClient.cpp" />
-    <ClCompile Include="HttpHeader.cpp" />
     <ClCompile Include="HttpHelper.cpp" />
     <ClCompile Include="HttpObject.cpp" />
-    <ClCompile Include="IFileContainer.cpp" />
     <ClCompile Include="IServer.cpp" />
-    <ClCompile Include="JsonHelper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="HttpsServer.cpp" />
-    <ClCompile Include="sqlite3.c" />
     <ClCompile Include="SQLiteConnector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h" />
     <ClInclude Include="base64.h" />
-    <ClInclude Include="HTMLPageRouter.h" />
+    <ClInclude Include="Hash.h" />
+    <ClInclude Include="http.h" />
+    <ClInclude Include="HttpRouter.h" />
     <ClInclude Include="HttpFileContainer.h" />
-    <ClInclude Include="IDataBaseConnector.h" />
-    <ClInclude Include="HttpHeaderStrings.h" />
-    <ClInclude Include="IClient.h" />
     <ClInclude Include="HttpsClient.h" />
-    <ClInclude Include="HttpHeader.h" />
     <ClInclude Include="HttpHelper.h" />
     <ClInclude Include="HttpObject.h" />
     <ClInclude Include="HttpsServer.h" />
-    <ClInclude Include="IFileContainer.h" />
     <ClInclude Include="IServer.h" />
-    <ClInclude Include="JSON.h" />
-    <ClInclude Include="JsonHelper.h" />
-    <ClInclude Include="sqlite3.h" />
     <ClInclude Include="SQLiteConnector.h" />
     <ClInclude Include="SQLiteSQLStatements.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Dockerfile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

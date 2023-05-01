@@ -1,14 +1,22 @@
+/*****************************************************************//**
+ * \file   HttpFileContainer.h
+ * \brief  this will contain files from constant url strings,
+ *         and file names will be key for unordered_map,
+ *         and real file contents will be stored in vector<int8_t>
+ * 
+ * \author binlee0903
+ * \date   February 2023
+ *********************************************************************/
+
 #pragma once
 
 #include <fstream>
 #include <filesystem>
 #include <unordered_map>
 
-#include "IFileContainer.h"
 #include "HttpObject.h"
-#include "base64.h"
 
-#ifdef _DEBUG || DEBUG
+#ifdef _DEBUG
 	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www";
 	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\css";
 	constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\images";
@@ -20,17 +28,26 @@
 	constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www\\assets\\js";
 #endif
 
-class HttpFileContainer final : public IFileContainer
+class HttpFileContainer final
 {
 public:
+	/**
+	 * constructor will be initialize files from constant url strings
+	 */
 	HttpFileContainer();
-	virtual ~HttpFileContainer();
+	~HttpFileContainer();
 
-	const std::vector<int8_t>* GetIndexFile() const override;
-	const std::vector<int8_t>* GetFile(const std::string* fileName) const override;
+	/**
+	 * return file content pointer from hash map
+	 * 
+	 * \param fileName key value
+	 * \return file content pointer
+	 */
+	std::vector<int8_t>* GetFile(const std::string* fileName) const;
 
 private:
+	std::hash<std::string> mStringHash;
 	std::vector<int8_t> mIndexPage;
-	std::unordered_map<std::string, std::vector<int8_t>*> mBinaryFileContainer;
+	std::unordered_map<uint64_t, std::vector<int8_t>*> mBinaryFileContainer;
 };
 

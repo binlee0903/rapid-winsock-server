@@ -1,57 +1,98 @@
+/*****************************************************************//**
+ * @file   HttpsClient.h
+ * @brief  connected client via server
+ * 
+ * @author binlee0903
+ * @date   February 2023
+ *********************************************************************/
+
 #pragma once
 
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <string>
 #include <iostream>
+#include <process.h>
 
 #include "IServer.h"
-#include "IClient.h"
 
 #include "HttpObject.h"
 #include "HttpHelper.h"
-//#include "HTMLPageRouter.h"
 
 class HttpObject;
 
 constexpr uint16_t BUFFER_SIZE = 512;
+constexpr uint16_t MAX_REQUEST_SIZE = 1000;
 
-class HttpsClient final : public IClient
+using socket_t = decltype(socket(0, 0, 0));
+
+class HttpsClient final
 {
 public:
-	HttpsClient() = default;
+	enum STATUS : int8_t
+	{
+		HTTPS_CLIENT_OK,
+		HTTPS_CLIENT_ERROR,
+		HTTPS_CLIENT_NO_AVAILABLE_DATA
+	};
+
+public:
+	HttpsClient(IServer* server, HttpRouter* router, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket);
 	~HttpsClient();
 
+	// delete copy constructor and operator for safe
 	HttpsClient(const HttpsClient& rhs) = delete;
 	HttpsClient& operator=(HttpsClient& rhs) = delete;
 
-	virtual HANDLE GetEventHandle() const override;
-	virtual uint16_t GetRequestCount() const override;
-	virtual void IncreaseRequestCount() override;
-	virtual std::string& GetClientIP() override;
+	/**
+	 * Increase mRequestCount when http request has arrived
+	 */
+	void IncreaseRequestCount();
 
-	virtual int InitializeClient(IServer* server, SRWLOCK* srwLock, SOCKET clientSocket) override;
-	virtual bool IsKeepAlive() override;
-	virtual int ProcessRead() override;
-	virtual int ProcessWrite() override;
-	virtual int ProcessClose() override;
-	virtual int ProcessOOB() override;
+	/**
+	 * when client is accepted, this function will run
+	 * 
+	 * @param client pointer to client
+	 */
+	static uint32_t Run(void* clientArg);
 
+	/**
+	 * check client connection is keep-alive
+	 * 
+	 * @return return true if connection is keep-alive
+	 */
+	bool IsKeepAlive();
+
+	/**
+	 * process https requests.
+	 * but if ssl is not established, do ssl handshake and read bytes
+	 * 
+	 * @return HTTPS_CLIENT_OK when success, 
+	 *  return HTTPS_CLIENT_ERROR when get error,
+	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
+	 */
+	int8_t ProcessRequest();
+
+	/**
+	 * this will call destructor,
+	 * and close socket
+	 */
+	void ProcessClose();
 private:
+	int8_t writeHttpResponse();
 	void printSocketError();
 	int processSSLHandshake();
-	uint32_t receiveData(std::string* content); // returns received data length
+	uint64_t receiveData(std::string* content);
 
 private:
-	/*HTMLPageRouter* mRouter;*/
 	HttpHelper* mHttpHelper;
 	SSL* mSSL;
-	SSL_CTX* mSSLCTX;
 	SRWLOCK* mSRWLock;
 	IServer* mServer;
 	HttpObject* mHttpObject;
-	SOCKET mSocket;
-	sockaddr_in mClientSockAddr;
+	HttpRouter* mRouter;
+
+	socket_t mSocket;
 	HANDLE mEventHandle;
 
 	bool mbIsKeepAlive;

@@ -1,0 +1,25 @@
+{
+    "service" : 
+    [
+        {
+            "service-name" : "/",
+            "file-name" : "index.html"
+        },
+        {
+            "service-name" : "about",
+            "file-name" : "about.html"
+        },
+        {
+            "service-name" : "/blog",
+            "file-name" : "blog.html"
+        },
+        {
+            "service-name" : "/article",
+            "file-name" : "article.html"
+        },
+        {
+            "service-name" : "404",
+            "file-name" : "404-page.html"
+        }
+    ]
+}

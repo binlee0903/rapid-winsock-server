@@ -1,137 +1,53 @@
 #include "HttpsServer.h"
 
 HttpsServer* HttpsServer::mServer = nullptr;
-//HTMLPageRouter* HttpsServer::mRouter = nullptr;
 
-HttpsServer::HttpsServer()
-	: mWsaData(new WSADATA())
-	, mSRWLock(new SRWLOCK())
-	, mTextFileContainer(new HttpFileContainer())
-	, mIsQuit(false)
+//static functions
+HttpsServer* HttpsServer::GetServer()
 {
-	mServer = this;
-	/*mRouter = new HTMLPageRouter();*/
-	mThreadHandles.reserve(100);
-	mConnectionCount = 0;
-	mSocket = 0;
-	InitializeSRWLock(mSRWLock);
-
-	SSL_load_error_strings();
-	SSL_library_init();
-	OpenSSL_add_ssl_algorithms();
-
-	mSSLCTX = SSL_CTX_new(TLS_server_method());
-	assert(mSSLCTX != nullptr);
-
-	if (SSL_CTX_use_certificate_file(mSSLCTX, SERVER_CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+	if (mServer == nullptr)
 	{
-		std::wcout << L"SSL start up Failed(HttpsServer constructor)" << std::endl;
+		mServer = new HttpsServer();
 	}
 
-	if (SSL_CTX_use_PrivateKey_file(mSSLCTX, SERVER_KEY_FILE, SSL_FILETYPE_PEM) <= 0)
-	{
-		std::wcout << L"SSL start up Failed(HttpsServer constructor)" << std::endl;
-	}
-
-	if (!SSL_CTX_check_private_key(mSSLCTX)) {
-		std::wcout << L"Private key does not match the certificate public key\n" << std::endl;
-	}
-	
-	mSSL = SSL_new(mSSLCTX);
-	SSL_set_mode(mSSL, SSL_MODE_AUTO_RETRY);
-
-	ZeroMemory(&mServerAddr, sizeof(sockaddr_in));
-	mServerAddr.sin_family = AF_INET;
-	mServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	mServerAddr.sin_port = htons(PORT_NUMBER);
-
-	int result = WSAStartup(MAKEWORD(2, 2), mWsaData);
-	assert(result == 0);
-
-	if (result != 0)
-	{
-		std::wcout << L"Socket start up Failed(HttpsServer constructor)" << std::endl;
-	}
-}
-
-HttpsServer::~HttpsServer()
-{
-	for (auto x : mThreadHandles)
-	{
-		CloseHandle(x);
-	}
-
-	for (auto x : mThreadHandles)
-	{
-		CloseHandle(x);
-	}
-
-	HttpHelper::DeleteHttpHelper();
-	/*delete mRouter;*/
-	delete mWsaData;
-	delete mSRWLock;
-
-	SSL_shutdown(mSSL);
-	SSL_free(mSSL);
-	SSL_CTX_free(mSSLCTX);
-
-	int result = WSACleanup();
-
-	assert(result == 0);
-	if (result != 0)
-	{
-		printSocketError();
-	}
+	return mServer;
 }
 
 int32_t HttpsServer::Run()
 {
 	openSocket();
 
-	int32_t returnValue = 0;
-	returnValue = bind(mSocket, (sockaddr*)&mServerAddr, sizeof(sockaddr_in));
-
-	assert(returnValue != SOCKET_ERROR);
-	if (returnValue == SOCKET_ERROR)
-	{
-		printSocketError();
-		return -1;
-	}
-
-	returnValue = listen(mSocket, MAX_CONNECTION_COUNT);
-	if (returnValue == SOCKET_ERROR)
-	{
-		printSocketError();
-		return -1;
-	}
-
 	HANDLE eventHandle = WSACreateEvent();
 	WSANETWORKEVENTS netEvents;
 	ZeroMemory(&netEvents, sizeof(netEvents));
 
-	WSAEventSelect(mSocket, eventHandle, FD_ACCEPT);
+	WSAEventSelect(mHttpsSocket, eventHandle, FD_ACCEPT);
 
-	SOCKET clientSocket = NULL;
-	sockaddr_in clientSockAddr;
-	int32_t addrLen = sizeof(sockaddr_in);
+	socket_t clientSocket = NULL;
 
-	reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, &HttpsServer::CheckQuitMessage, nullptr, 0, nullptr));
+	reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, &HttpsServer::checkQuitMessage, nullptr, 0, nullptr));
 
-	while (!mIsQuit)
+	while (!mbIsQuitButtonPressed)
 	{
 		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_WAIT_TIMEOUT, false);
-		WSAEnumNetworkEvents(mSocket, eventHandle, &netEvents);
+		WSAEnumNetworkEvents(mHttpsSocket, eventHandle, &netEvents);
 
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
-			clientSocket = processAccept();
-			mConnectionCount++;
-			mThreadHandles.push_back(reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0,
-				&HttpsServer::processClient,
-				reinterpret_cast<void*>(clientSocket), 0, nullptr)));
-			clientSocket = NULL;
-			ZeroMemory(&clientSockAddr, sizeof(clientSockAddr));
+			clientSocket = processAccept(mHttpsSocket);
+
+			if (clientSocket == NULL)
+			{
+				std::cout << "Run() : clientSocket was NULL" << std::endl;
+				continue;
+			}
+			else
+			{
+				mServer->mClients.push_back(new HttpsClient(mServer, mRouter, mServer->mSRWLock, mServer->mSSLCTX, clientSocket));
+				clientSocket = NULL;
+			}
+			
 			break;
 		default:
 			continue;
@@ -144,73 +60,165 @@ int32_t HttpsServer::Run()
 	return 0;
 }
 
+uint32_t HttpsServer::checkQuitMessage(void*)
+{
+	char ch = 0;
+
+	while (ch != 'q')
+	{
+		ch = _getch();
+	}
+
+	mServer->mbIsQuitButtonPressed = true;
+
+	return 0;
+}
+
+// common functions
+HttpsServer::HttpsServer()
+	: mbIsQuitButtonPressed(false)
+	, mHttpSocket(NULL)
+	, mHttpsSocket(NULL)
+	, mSRWLock(new SRWLOCK())
+	, mRouter(new HttpRouter())
+{
+	mServer = this;
+	InitializeSRWLock(mSRWLock);
+
+	SSL_load_error_strings();
+	SSL_library_init();
+	OpenSSL_add_ssl_algorithms();
+
+	mSSLCTX = SSL_CTX_new(TLS_server_method());
+	assert(mSSLCTX != nullptr);
+
+	if (SSL_CTX_use_certificate_file(mSSLCTX, SERVER_CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+	{
+		std::cout << "SSL start up Failed(HttpsServer constructor)" << std::endl;
+	}
+
+	if (SSL_CTX_use_PrivateKey_file(mSSLCTX, SERVER_KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+	{
+		std::cout << "SSL start up Failed(HttpsServer constructor)" << std::endl;
+	}
+
+	if (!SSL_CTX_check_private_key(mSSLCTX)) {
+		std::cout << "Private key does not match the certificate public key\n" << std::endl;
+	}
+
+	mSSL = SSL_new(mSSLCTX);
+	SSL_set_mode(mSSL, SSL_MODE_AUTO_RETRY);
+
+	int result = WSAStartup(MAKEWORD(2, 2), nullptr);
+	assert(result == 0);
+
+	if (result != 0)
+	{
+		std::cout << "Socket start up Failed(HttpsServer constructor)" << std::endl;
+	}
+}
+
+HttpsServer::~HttpsServer()
+{
+	for (auto x : mClients)
+	{
+		delete x;
+	}
+
+	HttpHelper::DeleteHttpHelper();
+	delete mSRWLock;
+	delete mRouter;
+
+	SSL_shutdown(mSSL);
+	SSL_free(mSSL);
+	SSL_CTX_free(mSSLCTX);
+
+	int result = WSACleanup();
+
+	assert(result == 0);
+}
+
+void HttpsServer::runHttpServer()
+{
+	HANDLE eventHandle = WSACreateEvent();
+	WSANETWORKEVENTS netEvents;
+	ZeroMemory(&netEvents, sizeof(netEvents));
+
+	WSAEventSelect(mHttpSocket, eventHandle, FD_ACCEPT);
+
+	socket_t clientSocket = NULL;
+
+	while (!mbIsQuitButtonPressed)
+	{
+		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_WAIT_TIMEOUT, false);
+		WSAEnumNetworkEvents(mHttpSocket, eventHandle, &netEvents);
+
+		switch (netEvents.lNetworkEvents)
+		{
+		case FD_ACCEPT:
+			clientSocket = processAccept(mHttpSocket);
+
+			if (clientSocket == NULL)
+			{
+				std::cout << "http Run() : clientSocket was NULL" << std::endl;
+				continue;
+			}
+			else
+			{
+				sendRedirectMessage(clientSocket);
+				clientSocket = NULL;
+			}
+			break;
+		default:
+			continue;
+		}
+	}
+
+	WSACloseEvent(eventHandle);
+}
+
+void HttpsServer::sendRedirectMessage(socket_t clientSocket)
+{
+
+}
+
 void HttpsServer::openSocket()
 {
-	SOCKET tempSocket = NULL;
-	tempSocket = socket(AF_INET, SOCK_STREAM, 0);
+	mHttpSocket = socket(AF_INET, SOCK_STREAM, 0); // http
+	assert(mHttpSocket != INVALID_SOCKET);
 
-	assert(tempSocket != 0);
-	assert(mSocket == 0);
+	mHttpsSocket = socket(AF_INET, SOCK_STREAM, 0); // https
+	assert(mHttpsSocket != INVALID_SOCKET);
 
-	if (tempSocket == INVALID_SOCKET)
-	{
-		printSocketError();
-	}
-	else if (mSocket == 0)
-	{
-		const DWORD optValue = 1;
-		setsockopt(tempSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue));
-		mSocket = tempSocket;
-		SSL_set_fd(mSSL, mSocket);
-	}
-	else
-	{
-		std::wcout << L"HttpsServer.cpp openSocket() attempted open socket twice" << std::endl;
-	}
-}
+	sockaddr_in httpServerAddr; // http
+	ZeroMemory(&httpServerAddr, sizeof(sockaddr_in));
+	httpServerAddr.sin_family = AF_INET;
+	httpServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	httpServerAddr.sin_port = htons(HTTP_PORT_NUMBER);
 
-void HttpsServer::closeSocket(SOCKET socket)
-{
-	if (closesocket(socket) != 0)
-	{
-		printSocketError();
-	}
-}
+	sockaddr_in httpsServerAddr; // https
+	ZeroMemory(&httpsServerAddr, sizeof(sockaddr_in));
+	httpsServerAddr.sin_family = AF_INET;
+	httpsServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	httpsServerAddr.sin_port = htons(HTTPS_PORT_NUMBER);
 
-HttpsServer* HttpsServer::GetServer()
-{
-	if (mServer == nullptr)
-	{
-		mServer = new HttpsServer();
-	}
+	const DWORD optValue = 1; // true
+	setsockopt(mHttpSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue)); // http
+	setsockopt(mHttpsSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue)); // https
+	SSL_set_fd(mSSL, static_cast<int>(mHttpsSocket));
 
-	return mServer;
-}
+	int32_t returnValue = 0;
+	returnValue = bind(mHttpSocket, reinterpret_cast<sockaddr*>(&httpServerAddr), sizeof(sockaddr_in)); // http
+	assert(returnValue != SOCKET_ERROR);
 
-HttpFileContainer* HttpsServer::GetHttpFileContainer()
-{
-	return mTextFileContainer;
-}
+	returnValue = bind(mHttpsSocket, reinterpret_cast<sockaddr*>(&httpsServerAddr), sizeof(sockaddr_in)); // https
+	assert(returnValue != SOCKET_ERROR);
 
-HTMLPageRouter* HttpsServer::GetHTMLPageRouter()
-{
-	/*return mRouter;*/
-	return nullptr;
-}
+	returnValue = listen(mHttpSocket, MAX_CONNECTION_COUNT); // http
+	assert(returnValue != SOCKET_ERROR);
 
-SSL* HttpsServer::GetSSL() const
-{
-	return mSSL;
-}
-
-SSL_CTX* HttpsServer::GetSSLCTX() const
-{
-	return mSSLCTX;
-}
-
-std::unordered_set<std::string>* HttpsServer::GetBlackLists()
-{
-	return &mBlackLists;
+	returnValue = listen(mHttpsSocket, MAX_CONNECTION_COUNT); // https
+	assert(returnValue != SOCKET_ERROR);
 }
 
 void HttpsServer::printSocketError()
@@ -224,97 +232,20 @@ void HttpsServer::printSocketError()
 		std::cout << msg << std::endl;
 	}
 	LocalFree(msg);
-	delete this;
 }
 
-SOCKET HttpsServer::processAccept()
+socket_t HttpsServer::processAccept(socket_t socket)
 {
-	SOCKET clientSocket = 0;
-	sockaddr_in clientSockAddr;
-	int32_t addrLen = sizeof(sockaddr_in);
+	socket_t clientSocket = 0;
 
-	clientSocket = accept(mSocket, reinterpret_cast<sockaddr*>(&clientSockAddr), &addrLen);
+	clientSocket = accept(socket, nullptr, NULL);
+
 	if (clientSocket == INVALID_SOCKET)
 	{
 		printSocketError();
 		return NULL;
 	}
 
-	mClientSockets.push_back(clientSocket);
 	return clientSocket;
 }
 
-uint32_t HttpsServer::CheckQuitMessage(void*)
-{
-	char ch = 0;
-
-	while (ch != 'q')
-	{
-		ch = _getch();
-	}
-
-	mServer->mIsQuit = true;
-
-	return 0;
-}
-
-uint32_t HttpsServer::processClient(void* clientSocketArg)
-{
-	SOCKET clientSocket = reinterpret_cast<SOCKET>(clientSocketArg);
-	IClient* client = new HttpsClient();
-	if (client->InitializeClient(mServer, mServer->mSRWLock, clientSocket) != 0)
-	{
-		delete client;
-		_endthreadex(0);
-		return 0;
-	}
-
-	mServer->mClients.push_back(client);
-	mServer->mConnectionCount++;
-
-	HANDLE clientEventHandle = client->GetEventHandle();
-	WSANETWORKEVENTS netEvents;
-	bool bGotRequest = false;
-
-	while (true)
-	{
-		WSAWaitForMultipleEvents(1, &clientEventHandle, false, INFINITE, false);
-		WSAEnumNetworkEvents(clientSocket, clientEventHandle, &netEvents);
-
-		client->IncreaseRequestCount();
-
-		if (netEvents.lNetworkEvents & FD_READ)
-		{
-			int retCode = client->ProcessRead();
-
-			if (retCode == -1)
-			{
-				break;
-			}
-			else if (retCode == 0)
-			{
-				client->ProcessWrite();
-
-				if (client->IsKeepAlive() == false)
-				{
-					client->ProcessClose();
-					break;
-				}
-			}
-		}
-
-		if (client->GetRequestCount() > 100)
-		{
-			mServer->mBlackLists.insert(client->GetClientIP());
-			client->ProcessClose();
-		}
-
-		if (netEvents.lNetworkEvents & FD_CLOSE)
-		{
-			client->ProcessClose();
-			break;
-		}
-	}
-
-    return 0;
-}
