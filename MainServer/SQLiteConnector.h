@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 #include "SQLiteSQLStatements.h"
-#include "JsonHelper.h"
+#include "json.h"
 
 constexpr char SQLITE_DB_LOCATION[] = "C:\\Users\\Administrator\\Documents\\sqlite_db_file\\blog.db";
 
@@ -16,8 +16,8 @@ public:
 	SQLiteConnector();
 	virtual ~SQLiteConnector();
 
-	virtual int32_t GetArticle(std::string* tableName, uint32_t index, std::string& articleObject) const;
-	int32_t GetArticles(uint32_t index, std::string& articles) const;
+	virtual int32_t GetArticle(uint32_t index, Json::Value& articleObject) const;
+	int32_t GetArticles(uint32_t index, Json::Value& articles) const;
 	virtual int32_t Insert(std::string* tableName, std::string* content);
 	virtual int32_t Update(std::string* tableName, std::string* content, uint32_t index);
 	virtual int32_t Delete(std::string* tableName, uint32_t index);

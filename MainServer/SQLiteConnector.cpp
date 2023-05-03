@@ -31,9 +31,8 @@ SQLiteConnector::~SQLiteConnector()
 	assert(returnCode == SQLITE_OK);
 }
 
-int32_t SQLiteConnector::GetArticle(std::string* tableName, uint32_t index, std::string& articleObject) const
+int32_t SQLiteConnector::GetArticle(uint32_t index, Json::Value& articleObject) const
 {
-	
 	int returnCode = 0;
 	returnCode = sqlite3_bind_int(mDBStateMentSelect, 1, index);
 	assert(returnCode == SQLITE_OK);
@@ -47,14 +46,10 @@ int32_t SQLiteConnector::GetArticle(std::string* tableName, uint32_t index, std:
 		const unsigned char* date = sqlite3_column_text(mDBStateMentSelect, 3);
 		const unsigned char* article = sqlite3_column_text(mDBStateMentSelect, 4);
 
-
-		articleObject.append("{\n");
-		JsonHelper::AppendJsonToString("title", reinterpret_cast<const char*>(title), articleObject);
-		JsonHelper::AppendJsonToString("titleImagePath", reinterpret_cast<const char*>(imagePath), articleObject);
-		JsonHelper::AppendJsonToString("date", reinterpret_cast<const char*>(date), articleObject);
-		JsonHelper::AppendJsonToString("article", reinterpret_cast<const char*>(article), articleObject);
-		articleObject.pop_back();
-		articleObject.append("}");
+		json::AppendJsonObject("title", reinterpret_cast<const char*>(title), articleObject);
+		json::AppendJsonObject("titleImagePath", reinterpret_cast<const char*>(imagePath), articleObject);
+		json::AppendJsonObject("date", reinterpret_cast<const char*>(date), articleObject);
+		json::AppendJsonObject("article", reinterpret_cast<const char*>(article), articleObject);
 	}
 	else
 	{
@@ -66,13 +61,11 @@ int32_t SQLiteConnector::GetArticle(std::string* tableName, uint32_t index, std:
 	return 0;
 }
 
-int32_t SQLiteConnector::GetArticles(uint32_t index, std::string& articles) const
+int32_t SQLiteConnector::GetArticles(uint32_t index, Json::Value& articles) const
 {
 	int returnCode = 0;
 	returnCode = sqlite3_bind_int(mDBStateMentGetArticles, 1, index * 6);
 	assert(returnCode == SQLITE_OK);
-
-	articles.append("[");
 
 	for (size_t i = 0; i < 6; i++)
 	{
@@ -92,19 +85,14 @@ int32_t SQLiteConnector::GetArticles(uint32_t index, std::string& articles) cons
 			const unsigned char* imagePath = sqlite3_column_text(mDBStateMentGetArticles, 2);
 			const unsigned char* date = sqlite3_column_text(mDBStateMentGetArticles, 3);
 
-			articles.append("{");
-			JsonHelper::AppendJsonToString("index", buffer, articles);
-			JsonHelper::AppendJsonToString("title", reinterpret_cast<const char*>(title), articles);
-			JsonHelper::AppendJsonToString("titleImagePath", reinterpret_cast<const char*>(imagePath), articles);
-			JsonHelper::AppendJsonToString("date", reinterpret_cast<const char*>(date), articles);
-			articles.pop_back();
-			articles.append("},");
+			json::AppendMultipleJsonObject(index, "index", buffer, articles);
+			json::AppendMultipleJsonObject(index, "title", reinterpret_cast<const char*>(title), articles);
+			json::AppendMultipleJsonObject(index, "titleImagePath", reinterpret_cast<const char*>(imagePath), articles);
+			json::AppendMultipleJsonObject(index, "date", reinterpret_cast<const char*>(date), articles);
 		}
 	}
 
 	sqlite3_reset(mDBStateMentGetArticles);
-	articles.pop_back();
-	articles.append("]");
 	return 0;
 }
 

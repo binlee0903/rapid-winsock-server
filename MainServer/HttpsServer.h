@@ -12,22 +12,15 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>
-#include <WinSock2.h>
-#include <ws2tcpip.h>
 #include <iostream>
 #include <conio.h>
-#include <cstdint>
 
 #include <vector>
 #include <unordered_set>
 #include <process.h>
 #include <synchapi.h>
 
-#include <cassert>
-
-#include <openssl/ssl3.h>
-#include <openssl/err.h>
-
+#include "network.h"
 #include "HttpsClient.h"
 #include "HttpRouter.h"
 
@@ -67,18 +60,13 @@ private:
 	HttpsServer();
 	~HttpsServer();
 
-	void runHttpServer();
 	void sendRedirectMessage(socket_t clientSocket);
-	void openSocket();
 	void printSocketError();
-
-	socket_t processAccept(socket_t socket);
 private:
 	static HttpsServer* mServer;
 
 	bool mbIsQuitButtonPressed;
 
-	socket_t mHttpSocket;
 	socket_t mHttpsSocket;
 	std::vector<HttpsClient*> mClients;
 	std::unordered_set<std::string> mBlackLists;
@@ -86,7 +74,5 @@ private:
 	SRWLOCK* mSRWLock;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
-
-	HttpRouter* mRouter;
 };
 

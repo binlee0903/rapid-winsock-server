@@ -8,6 +8,7 @@ function ConnectWebSocket()
 
     http.open('GET', url);
 
+    // TODO : complete web socket connection
 }
 
 async function GetArticleFromServer(articleNumber)
@@ -32,14 +33,14 @@ async function GetArticleFromServer(articleNumber)
     });
 }
 
-async function GetArticlesFromServer(pageIndex)
+async function GetArticleListFromServer(pageIndex)
 {
     if (pageIndex == null)
     {
         return;
     }
 
-    return await fetch('/getArticles', 
+    return await fetch('/getArticleList', 
     {
         method: 'GET',
         headers: { 'Page-Index' : pageIndex }

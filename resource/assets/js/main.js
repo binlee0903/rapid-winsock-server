@@ -1,6 +1,6 @@
 (function main()
 {
-    GetArticlesFromServer(0)
+    GetArticleListFromServer(0)
     .then((data) =>
     {
         PutArticlesToList(data);

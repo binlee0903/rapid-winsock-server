@@ -45,7 +45,25 @@
     <Filter Include="Source\hash">
       <UniqueIdentifier>{baddf480-f1ca-4fad-9a63-8bb5a14a94ae}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header\services">
+    <Filter Include="Header\json">
+      <UniqueIdentifier>{438f3b97-5d08-4a3f-b735-5f0922548059}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\json">
+      <UniqueIdentifier>{7b905231-dcba-4322-abff-89070d420760}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header\network">
+      <UniqueIdentifier>{c0c05e1d-43d6-4877-8be9-6e8acea3e5e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\network">
+      <UniqueIdentifier>{6d0afc32-b7e5-4409-a79a-3d684156ab7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="json">
+      <UniqueIdentifier>{a09a574d-da36-488e-ac5d-6c63b1cee13e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\service">
+      <UniqueIdentifier>{4810f957-5527-4e7f-9052-c823bdcc4ed8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header\service">
       <UniqueIdentifier>{f339317e-2d0e-46f5-b36b-35b0ef769dc3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -82,6 +100,30 @@
     </ClCompile>
     <ClCompile Include="Hash.cpp">
       <Filter>Source\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpServer.cpp">
+      <Filter>Source\http</Filter>
+    </ClCompile>
+    <ClCompile Include="http.cpp">
+      <Filter>Source\http</Filter>
+    </ClCompile>
+    <ClCompile Include="json.cpp">
+      <Filter>Source\json</Filter>
+    </ClCompile>
+    <ClCompile Include="network.cpp">
+      <Filter>Source\network</Filter>
+    </ClCompile>
+    <ClCompile Include="IService.cpp">
+      <Filter>Source\interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexPageService.cpp">
+      <Filter>Source\service</Filter>
+    </ClCompile>
+    <ClCompile Include="GetAriticleService.cpp">
+      <Filter>Source\service</Filter>
+    </ClCompile>
+    <ClCompile Include="GetArticleListService.cpp">
+      <Filter>Source\service</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -124,5 +166,31 @@
     <ClInclude Include="http.h">
       <Filter>Header\http</Filter>
     </ClInclude>
+    <ClInclude Include="HttpServer.h">
+      <Filter>Header\http</Filter>
+    </ClInclude>
+    <ClInclude Include="json.h">
+      <Filter>Header\json</Filter>
+    </ClInclude>
+    <ClInclude Include="network.h">
+      <Filter>Header\network</Filter>
+    </ClInclude>
+    <ClInclude Include="IService.h">
+      <Filter>Header\interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexPageService.h">
+      <Filter>Header\service</Filter>
+    </ClInclude>
+    <ClInclude Include="GetAriticleService.h">
+      <Filter>Header\service</Filter>
+    </ClInclude>
+    <ClInclude Include="GetArticleListService.h">
+      <Filter>Header\service</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\resource\json\services.json">
+      <Filter>json</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -2,18 +2,18 @@
 
 HttpFileContainer::HttpFileContainer()
 {
-    std::vector<std::filesystem::directory_iterator> wwwFileLocations;
-    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_HTML_LOCATION));
-    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_CSS_LOCATION));
-    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_IMAGE_LOCATION));
-    wwwFileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_JAVASCRIPT_LOCATION));
+    std::vector<std::filesystem::directory_iterator> fileLocations;
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_HTML_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_CSS_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_IMAGE_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_JAVASCRIPT_LOCATION));
 
     std::vector<std::pair<std::ifstream*, uintmax_t>> fileStreamsAndSize;
     std::vector<std::string> fileNames;
     fileStreamsAndSize.reserve(16);
     fileNames.reserve(16);
 
-    for (const auto& x : wwwFileLocations)
+    for (const auto& x : fileLocations)
     {
         for (const auto& y : x)
         {
@@ -35,7 +35,7 @@ HttpFileContainer::HttpFileContainer()
             fileBuffer->push_back(fileStreamsAndSize[i].first->get());
         }
 
-        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mStringHash(fileNames[i]), fileBuffer));
+        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mHash.GetHashValue(fileNames[i].c_str()), fileBuffer));
         fileStreamsAndSize[i].first->close();
     }
 
@@ -55,7 +55,7 @@ HttpFileContainer::~HttpFileContainer()
 
 std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
 {
-    auto file = mBinaryFileContainer.find(mStringHash(*fileName));
+    auto file = mBinaryFileContainer.find(mHash.GetHashValue(fileName->c_str()));
 
     if (file == std::end(mBinaryFileContainer))
     {

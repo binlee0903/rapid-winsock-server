@@ -15,12 +15,13 @@
 #include <unordered_map>
 
 #include "HttpObject.h"
+#include "Hash.h"
 
 #ifdef _DEBUG
-	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www";
-	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\css";
-	constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\images";
-	constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\BlogWebServer\\www\\assets\\js";
+	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource";
+	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource\\assets\\css";
+	constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource\\assets\\images";
+	constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource\\assets\\js";
 #else
 	constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www";
 	constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www\\assets\\css";
@@ -46,7 +47,7 @@ public:
 	std::vector<int8_t>* GetFile(const std::string* fileName) const;
 
 private:
-	std::hash<std::string> mStringHash;
+	Hash mHash;
 	std::vector<int8_t> mIndexPage;
 	std::unordered_map<uint64_t, std::vector<int8_t>*> mBinaryFileContainer;
 };

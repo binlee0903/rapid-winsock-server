@@ -37,7 +37,7 @@ public:
 	};
 
 public:
-	HttpsClient(IServer* server, HttpRouter* router, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket);
+	HttpsClient(IServer* server, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket, sockaddr_in clientSockAddr);
 	~HttpsClient();
 
 	// delete copy constructor and operator for safe
@@ -90,7 +90,6 @@ private:
 	SRWLOCK* mSRWLock;
 	IServer* mServer;
 	HttpObject* mHttpObject;
-	HttpRouter* mRouter;
 
 	socket_t mSocket;
 	HANDLE mEventHandle;

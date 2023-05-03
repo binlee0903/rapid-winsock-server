@@ -9,32 +9,57 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <filesystem>
 #include <vector>
 #include <unordered_map>
 
+#include <json/json.h>
+
 #include "HttpObject.h"
 #include "HttpFileContainer.h"
+#include "http.h"
 
+#pragma region IncludeServices
+
+#include "IndexPageService.h"
+#include "GetAriticleService.h"
+#include "GetArticleListService.h"
+
+#pragma endregion
+
+#ifdef _DEBUG
+constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource\\json\\services.json";
+#else
+constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www";
+#endif
 
 class HttpRouter final
 {
 public:
-	HttpRouter();
 	~HttpRouter();
 
-	void CreateHeader(HttpObject* httpObject, std::vector<int8_t>* header) const;
-	void WriteServiceFileToVector(HttpObject* httpObject, std::vector<int8_t>* responseBody) const;
+	static HttpRouter* GetRouter();
+
+	void Route(HttpObject* httpObject, std::vector<int8_t>& response) const;
 
 private:
+	HttpRouter();
 
+	void createFileRequestResponse(HttpObject* httpObject, std::vector<int8_t>& response) const;
+	void executeService(HttpObject* httpObject, std::vector<int8_t>& response) const;
 
-	bool isHasService(std::string& path) const;
-
+	bool isServiceRequest(std::string& path) const;
+	bool isHasServiceRequestAndAvailable(uint64_t serviceHash) const;
+	bool isHasFileRequestAndAvailable(std::string& path) const;
 
 private:
-	std::hash<std::string> mStringHash;
-	HttpFileContainer* mTextFileContainer;
+	static HttpRouter* mRouter;
+	static SRWLOCK* mSRWLock;
+
+	HttpFileContainer* mHttpFileContainer;
+	SQLiteConnector* mSQLiteConnector;
+	std::unordered_map<uint64_t, IService*> mServices;
+	Hash mHash;
 };
-
