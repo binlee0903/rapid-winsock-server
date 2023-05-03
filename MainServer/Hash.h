@@ -14,8 +14,8 @@
 class Hash final
 {
 public:
-	static uint64_t GetHashValue(const char* value);
+	static uint64_t GetHashValue(const std::string* value);
 
 private:
-	static std::hash<const char*> mHasher;
+	static std::hash<std::string> mHasher;
 };

@@ -3,7 +3,7 @@
 GetArticleService::GetArticleService(SQLiteConnector* sqliteConnector, SRWLOCK* srwLock)
 {
 	mSRWLock = srwLock;
-	mServiceName = mHash.GetHashValue(GET_ARTICLE_SERVICE_NAME);
+	mServiceName = mHash.GetHashValue(&GET_ARTICLE_SERVICE_NAME);
 	mSQLiteConnector = sqliteConnector;
 }
 
@@ -29,9 +29,9 @@ bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& service
 	mSQLiteConnector->GetArticle(std::stoi(httpObject->GetHttpHeaders().at("Article-Number")), article);
 	ReleaseSRWLockExclusive(mSRWLock);
 
-	std::string* articlesString = &article.asString();
+	std::string articlesString = article.asString();
 
-	for (auto& x : *articlesString)
+	for (auto& x : articlesString)
 	{
 		serviceOutput.push_back(x);
 	}

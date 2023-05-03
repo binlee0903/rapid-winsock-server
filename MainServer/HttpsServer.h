@@ -55,7 +55,7 @@ public:
 	 */
 	virtual int32_t Run() override;
 private:
-	static uint32_t checkQuitMessage(void*);
+	static uint32_t __stdcall checkQuitMessage(void*);
 private:
 	HttpsServer();
 	~HttpsServer();

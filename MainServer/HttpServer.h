@@ -19,7 +19,7 @@ public:
 	static int32_t Run();
 
 private:
-	static uint32_t redirectToHttps(void*);
+	static uint32_t __stdcall redirectToHttps(void*);
 
 private:
 	static network::socket_t mHttpSocket;

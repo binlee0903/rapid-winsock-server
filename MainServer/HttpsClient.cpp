@@ -35,7 +35,7 @@ void HttpsClient::IncreaseRequestCount()
 	mRequestCount++;
 }
 
-uint32_t HttpsClient::Run(void* clientArg)
+uint32_t __stdcall HttpsClient::Run(void* clientArg)
 {
 	HttpsClient* client = reinterpret_cast<HttpsClient*>(clientArg);
 
@@ -169,7 +169,7 @@ uint64_t HttpsClient::receiveData(std::string* content)
 
 	u_long avaliableDataSize = 0;
 	int32_t sslErrorCode = 0;
-	uint64_t receivedDataLength = 0;
+	size_t receivedDataLength = 0;
 	uint64_t recvLenSum = 0;
 
 	if (ioctlsocket(mSocket, FIONREAD, &avaliableDataSize) != 0)

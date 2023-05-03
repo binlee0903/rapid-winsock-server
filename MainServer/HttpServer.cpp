@@ -9,7 +9,7 @@ int32_t HttpServer::Run()
     return 0;
 }
 
-uint32_t HttpServer::redirectToHttps(void*)
+uint32_t __stdcall HttpServer::redirectToHttps(void*)
 {
 	HANDLE eventHandle = WSACreateEvent();
 	WSANETWORKEVENTS netEvents;

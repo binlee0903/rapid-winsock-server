@@ -63,7 +63,7 @@ int32_t HttpsServer::Run()
 	return 0;
 }
 
-uint32_t HttpsServer::checkQuitMessage(void*)
+uint32_t __stdcall HttpsServer::checkQuitMessage(void*)
 {
 	char ch = 0;
 

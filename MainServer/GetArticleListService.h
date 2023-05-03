@@ -3,7 +3,7 @@
 #include "IService.h"
 #include "SQLiteConnector.h"
 
-constexpr char GET_ARTICLE_LIST_SERVICE_NAME[] = "/getArticleList";
+const std::string GET_ARTICLE_LIST_SERVICE_NAME = "/getArticleList";
 
 class GetArticleListService final : public IService
 {

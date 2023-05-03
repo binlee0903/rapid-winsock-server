@@ -54,7 +54,7 @@ public:
 	 * 
 	 * @param client pointer to client
 	 */
-	static uint32_t Run(void* clientArg);
+	static uint32_t __stdcall Run(void* clientArg);
 
 	/**
 	 * check client connection is keep-alive

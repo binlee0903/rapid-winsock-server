@@ -69,6 +69,8 @@ void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	httpObject->SetHttpVersion(firstBuffer);
 	is.ignore(LLONG_MAX, '\n');
 
+	auto& httpHeaders = httpObject->GetHttpHeaders();
+
 	// read http key values
 	while (is.eof() != true)
 	{
@@ -89,7 +91,7 @@ void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 			is.ignore();
 			std::getline(is, secondBuffer);
 			size_t offset = secondBuffer.find('\r');
-			httpObject->GetHttpHeaders().insert(firstBuffer, secondBuffer.substr(0, offset));
+			httpHeaders.insert({ firstBuffer, secondBuffer.substr(0, offset) });
 		}
 	}
 }

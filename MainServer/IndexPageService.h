@@ -3,7 +3,7 @@
 #include "IService.h"
 #include "HttpFileContainer.h"
 
-constexpr char INDEX_PAGE_SERVICE_NAME[] = "/";
+const std::string INDEX_PAGE_SERVICE_NAME = "/";
 
 class IndexPageService final : public IService
 {

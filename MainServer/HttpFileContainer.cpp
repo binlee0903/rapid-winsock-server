@@ -35,7 +35,7 @@ HttpFileContainer::HttpFileContainer()
             fileBuffer->push_back(fileStreamsAndSize[i].first->get());
         }
 
-        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mHash.GetHashValue(fileNames[i].c_str()), fileBuffer));
+        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mHash.GetHashValue(&fileNames[i]), fileBuffer));
         fileStreamsAndSize[i].first->close();
     }
 
@@ -55,7 +55,7 @@ HttpFileContainer::~HttpFileContainer()
 
 std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
 {
-    auto file = mBinaryFileContainer.find(mHash.GetHashValue(fileName->c_str()));
+    auto file = mBinaryFileContainer.find(mHash.GetHashValue(fileName));
 
     if (file == std::end(mBinaryFileContainer))
     {

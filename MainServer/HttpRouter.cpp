@@ -14,14 +14,14 @@ HttpRouter::HttpRouter()
 	is.close();
 
 	// TODO : Add service list
-	std::string* serviceName = &json["IndexPageService"]["name"].asString();
-	mServices.insert({ mHash.GetHashValue(serviceName->c_str()), IndexPageService::GetIndexPageServiceInstance(mHttpFileContainer->GetFile(serviceName)) });
+	std::string serviceName = json["IndexPageService"]["name"].asString();
+	mServices.insert({ mHash.GetHashValue(&serviceName), IndexPageService::GetIndexPageServiceInstance(mHttpFileContainer->GetFile(&serviceName)) });
 
-	serviceName = &json["GetArticleService"]["name"].asString();
-	mServices.insert({ mHash.GetHashValue(serviceName->c_str()), GetArticleService::GetArticleServiceInstance(mSQLiteConnector, mSRWLock) });
+	serviceName = json["GetArticleService"]["name"].asString();
+	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleService::GetArticleServiceInstance(mSQLiteConnector, mSRWLock) });
 
-	serviceName = &json["GetArticleListService"]["name"].asString();
-	mServices.insert({ mHash.GetHashValue(serviceName->c_str()), GetArticleListService::GetArticleListServiceInstance(mSQLiteConnector, mSRWLock) });
+	serviceName = json["GetArticleListService"]["name"].asString();
+	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleListService::GetArticleListServiceInstance(mSQLiteConnector, mSRWLock) });
 }
 
 void HttpRouter::createFileRequestResponse(HttpObject* httpObject, std::vector<int8_t>& response) const
@@ -91,7 +91,7 @@ void HttpRouter::executeService(HttpObject* httpObject, std::vector<int8_t>& res
 	std::string serviceName;
 	http::GetServiceNameFromDest(httpObject, serviceName);
 
-	uint64_t serviceNameHash = mHash.GetHashValue(serviceName.c_str());
+	uint64_t serviceNameHash = mHash.GetHashValue(&serviceName);
 
 	if (!isHasServiceRequestAndAvailable(serviceNameHash))
 	{
