@@ -13,8 +13,8 @@
 class HttpServer final
 {
 public:
-	HttpServer();
-	~HttpServer();
+	HttpServer() = default;
+	~HttpServer() = default;
 
 	static int32_t Run();
 

@@ -1,5 +1,7 @@
 #include "GetArticleListService.h"
 
+GetArticleListService* GetArticleListService::mGetArticleListService = nullptr;
+
 GetArticleListService::GetArticleListService(SQLiteConnector* sqliteConnector, SRWLOCK* srwLock)
 {
 	mSRWLock = srwLock;
@@ -26,12 +28,16 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 {
 	Json::Value articles;
 	AcquireSRWLockExclusive(mSRWLock);
-	mSQLiteConnector->GetArticles(std::stoi(httpObject->GetHttpHeaders().at("Page-Index")), articles);
+	int pageIndex = std::stoi(httpObject->GetHttpHeaders().at("Page-Index"));
+	mSQLiteConnector->GetArticles(pageIndex, articles);
 	ReleaseSRWLockExclusive(mSRWLock);
 
-	std::string articlesString = articles.asString();
+	std::stringstream ss;
+	ss << articles;
 
-	for (auto& x : articlesString)
+	std::string buffer = ss.str();
+
+	for (auto& x : buffer)
 	{
 		serviceOutput.push_back(x);
 	}

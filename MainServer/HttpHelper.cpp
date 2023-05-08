@@ -33,15 +33,7 @@ void HttpHelper::DeleteHttpHelper()
 
 void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
 {
-	std::string& httpDest = httpObject->GetHttpDest();
-	const std::vector<int8_t>* destFile = nullptr;
-
 	mRouter->Route(httpObject, response);
-
-	response.push_back('\r');
-	response.push_back('\n');
-	response.push_back('\r');
-	response.push_back('\n');
 }
 
 void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) const
@@ -63,7 +55,36 @@ void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	std::getline(is, firstBuffer, BASIC_DELIM);
 	size_t offset = firstBuffer.rfind(L'/') + 1;
 	firstBuffer = firstBuffer.substr(offset);
+	size_t rearOffset = firstBuffer.rfind('?');
+	if (rearOffset != std::string::npos)
+	{
+		firstBuffer = firstBuffer.substr(0, rearOffset);
+	}
 	httpObject->SetHttpDest(firstBuffer);
+
+	offset = firstBuffer.rfind(L'.') + 1;
+	std::string ext = firstBuffer.substr(offset);
+
+	if (ext == "js")
+	{
+		httpObject->SetHttpContentType("text/javascript");
+	}
+	else if (ext == "css")
+	{
+		httpObject->SetHttpContentType("text/css");
+	}
+	else if (ext == "png")
+	{
+		httpObject->SetHttpContentType("image/png");
+	}
+	else if (ext == "html" || httpObject->GetHttpDest() == "")
+	{
+		httpObject->SetHttpContentType("text/html");
+	}
+	else
+	{
+		httpObject->SetHttpContentType("application/json");
+	}
 
 	std::getline(is, firstBuffer);
 	httpObject->SetHttpVersion(firstBuffer);

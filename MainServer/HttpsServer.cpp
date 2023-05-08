@@ -23,6 +23,8 @@ int32_t HttpsServer::Run()
 
 	WSAEventSelect(mHttpsSocket, eventHandle, FD_ACCEPT);
 
+	std::string buffer;
+	buffer.reserve(32);
 	socket_t clientSocket = NULL;
 	sockaddr_in clientSockAddr;
 	ZeroMemory(&clientSockAddr, sizeof(sockaddr));
@@ -37,30 +39,35 @@ int32_t HttpsServer::Run()
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
-			clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr);
+			clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, buffer);
 
 			if (clientSocket == NULL)
 			{
 				std::cout << "Run() : clientSocket was NULL" << std::endl;
-				continue;
+				break;
 			}
 			else
 			{
-				mServer->mClients.push_back(new HttpsClient(mServer, mServer->mSRWLock, mServer->mSSLCTX, clientSocket, clientSockAddr));
+				mServer->mClients.insert({ buffer, new HttpsClient(mServer, mServer->mSRWLock, mServer->mSSLCTX, clientSocket, buffer)});
 				clientSocket = NULL;
 				ZeroMemory(&clientSockAddr, sizeof(sockaddr));
 			}
-			
 			break;
+
+			
 		default:
 			continue;
 		}
 	}
 
 	WSACloseEvent(eventHandle);
-
 	delete this;
 	return 0;
+}
+
+void HttpsServer::PopClient(std::string& ip)
+{
+	mClients.erase(ip);
 }
 
 uint32_t __stdcall HttpsServer::checkQuitMessage(void*)
@@ -107,10 +114,13 @@ HttpsServer::HttpsServer()
 		std::cout << "Private key does not match the certificate public key\n" << std::endl;
 	}
 
+	SSL_CTX_set_mode(mSSLCTX, SSL_MODE_ENABLE_PARTIAL_WRITE);
+
 	mSSL = SSL_new(mSSLCTX);
 	SSL_set_mode(mSSL, SSL_MODE_AUTO_RETRY);
 
-	int result = WSAStartup(MAKEWORD(2, 2), nullptr);
+	WSADATA wsaData;
+	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	assert(result == 0);
 
 	if (result != 0)
@@ -123,7 +133,7 @@ HttpsServer::~HttpsServer()
 {
 	for (auto x : mClients)
 	{
-		delete x;
+		delete x.second;
 	}
 
 	HttpHelper::DeleteHttpHelper();

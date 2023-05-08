@@ -1,5 +1,7 @@
 #include "HttpServer.h"
 
+network::socket_t HttpServer::mHttpSocket = NULL;
+
 int32_t HttpServer::Run()
 {
     network::OpenSocket(mHttpSocket, network::HTTP_PORT_NUMBER, nullptr, false);
@@ -17,9 +19,6 @@ uint32_t __stdcall HttpServer::redirectToHttps(void*)
 
 	WSAEventSelect(mHttpSocket, eventHandle, FD_ACCEPT);
 
-	network::socket_t clientSocket = NULL;
-	sockaddr_in sockaddrIn;
-
 	while (true)
 	{
 		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_WAIT_TIMEOUT, false);
@@ -28,19 +27,8 @@ uint32_t __stdcall HttpServer::redirectToHttps(void*)
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
-			clientSocket = network::ProcessAccept(mHttpSocket, sockaddrIn);
-
-			if (clientSocket == NULL)
-			{
-				//std::cout << "http Run() : clientSocket was NULL" << std::endl;
-				continue;
-			}
-			else
-			{
-				//sendRedirectMessage(clientSocket);
-				clientSocket = NULL;
-			}
-			break;
+			network::ProcessRedirect(mHttpSocket);
+			continue;
 		default:
 			continue;
 		}

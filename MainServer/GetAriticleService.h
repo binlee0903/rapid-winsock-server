@@ -18,5 +18,5 @@ private:
 
 private:
 	static GetArticleService* mGetArticleService;
-	static SQLiteConnector* mSQLiteConnector;
+	SQLiteConnector* mSQLiteConnector;
 };

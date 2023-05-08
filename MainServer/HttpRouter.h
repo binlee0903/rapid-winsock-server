@@ -32,7 +32,7 @@
 #ifdef _DEBUG
 constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\egb35\\source\\repos\\binlee0903\\rapid-winsock-server\\resource\\json\\services.json";
 #else
-constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\Administrator\\Documents\\www";
+constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\json\\services.json";
 #endif
 
 class HttpRouter final
@@ -56,7 +56,7 @@ private:
 
 private:
 	static HttpRouter* mRouter;
-	static SRWLOCK* mSRWLock;
+	SRWLOCK* mSRWLock;
 
 	HttpFileContainer* mHttpFileContainer;
 	SQLiteConnector* mSQLiteConnector;

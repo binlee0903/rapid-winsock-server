@@ -29,28 +29,22 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -72,14 +66,31 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ExternalIncludePath>C:\Users\egb35\Documents\vcpkg\packages\jsoncpp_x86-windows\include\json;C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3400000;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <ExecutablePath>$(VC_ExecutablePath_x64);$(CommonExecutablePath);$(ExecutablePath)</ExecutablePath>
+    <ReferencePath>$(VC_ReferencesPath_x64);$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ExternalIncludePath>C:\Users\egb35\Documents\vcpkg\packages\jsoncpp_x86-windows\include\json;C:\Program Files\OpenSSL\include;C:\Users\egb35\Documents\sqlite-amalgamation-3400000;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3400000;C:\Program Files\OpenSSL\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <ExecutablePath>$(VC_ExecutablePath_x86);$(CommonExecutablePath);$(ExecutablePath)</ExecutablePath>
+    <ReferencePath>$(VC_ReferencesPath_x86);$(ReferencePath)</ReferencePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -87,11 +98,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -102,13 +114,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -119,13 +132,14 @@
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;sqlite3.lib;jsoncpp.lib</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -144,25 +158,35 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libssl.lib;libcrypto.lib;sqlite3.lib;jsoncpp.lib</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="base64.cpp" />
+    <ClCompile Include="GetAriticleService.cpp" />
+    <ClCompile Include="GetArticleListService.cpp" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="http.cpp" />
     <ClCompile Include="HttpRouter.cpp" />
     <ClCompile Include="HttpFileContainer.cpp" />
     <ClCompile Include="HttpsClient.cpp" />
     <ClCompile Include="HttpHelper.cpp" />
     <ClCompile Include="HttpObject.cpp" />
+    <ClCompile Include="HttpServer.cpp" />
+    <ClCompile Include="IndexPageService.cpp" />
     <ClCompile Include="IServer.cpp" />
+    <ClCompile Include="IService.cpp" />
+    <ClCompile Include="json.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="HttpsServer.cpp" />
+    <ClCompile Include="network.cpp" />
     <ClCompile Include="SQLiteConnector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h" />
     <ClInclude Include="base64.h" />
+    <ClInclude Include="GetAriticleService.h" />
+    <ClInclude Include="GetArticleListService.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="HttpRouter.h" />
@@ -170,10 +194,18 @@
     <ClInclude Include="HttpsClient.h" />
     <ClInclude Include="HttpHelper.h" />
     <ClInclude Include="HttpObject.h" />
+    <ClInclude Include="HttpServer.h" />
     <ClInclude Include="HttpsServer.h" />
+    <ClInclude Include="IndexPageService.h" />
     <ClInclude Include="IServer.h" />
+    <ClInclude Include="IService.h" />
+    <ClInclude Include="json.h" />
+    <ClInclude Include="network.h" />
     <ClInclude Include="SQLiteConnector.h" />
     <ClInclude Include="SQLiteSQLStatements.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\resource\json\services.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

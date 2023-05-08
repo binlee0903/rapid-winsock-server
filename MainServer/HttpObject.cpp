@@ -25,6 +25,16 @@ void HttpObject::SetHttpDest(std::string& httpDest)
 	mDest = httpDest;
 }
 
+std::string& HttpObject::GetHttpContentType()
+{
+	return mContentType;
+}
+
+void HttpObject::SetHttpContentType(const char* httpContentType)
+{
+	mContentType = httpContentType;
+}
+
 HttpObject::HttpVersion HttpObject::GetHttpVersion()
 {
 	return mHttpVersion;

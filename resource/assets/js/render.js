@@ -9,6 +9,11 @@ function PutArticlesToList(articles)
 
     for (let i in articles)
     {
+        if (articles[i] == null)
+        {
+          continue;
+        }
+
         container.innerHTML += `<div class="row gy-5 gx-4 g-xl-5">
             <div class="col-lg-6"> 
                 <article class="card post-card h-100 border-0 bg-transparent"> 

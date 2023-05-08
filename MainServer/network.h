@@ -8,6 +8,8 @@
 
 #include <cstdint>
 #include <cassert>
+#include <string>
+#include <sstream>
 
 namespace network
 {
@@ -19,7 +21,8 @@ namespace network
 	constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 	constexpr uint16_t TIME_OUT = 3000;
 
-	void OpenSocket(socket_t targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket);
+	void OpenSocket(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket);
+	void ProcessRedirect(socket_t targetSocket);
 
-	socket_t ProcessAccept(socket_t socket, sockaddr_in& sockaddrIn);
+	socket_t ProcessAccept(socket_t socket, sockaddr_in sockaddrIn, std::string& address);
 }

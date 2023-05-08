@@ -1,6 +1,6 @@
 #include "http.h"
 
-void http::AppendStringToVector(const char* str, int size, std::vector<int8_t>& v)
+void http::AppendStringToVector(const char* str, size_t size, std::vector<int8_t>& v)
 {
 	for (size_t i = 0; i < size; i++)
 	{
@@ -8,54 +8,33 @@ void http::AppendStringToVector(const char* str, int size, std::vector<int8_t>& 
 	}
 }
 
-void http::Create200Response(HttpObject* httpObject, const std::vector<int8_t>* contentBody, std::vector<int8_t>& response)
+void http::Create200Response(HttpObject* httpObject, const std::vector<int8_t>* contentBody, std::vector<int8_t>& response, bool isKeepAlive)
 {
 	AppendStringToVector(HTTP_200_MESSAGE, sizeof(HTTP_200_MESSAGE) - 1, response);
-	response.push_back('\r\n');
-
-	http::AppendStringToVector("Server: TCP/IP", 14, response);
-	response.push_back('\r\n');
 
 	std::string& httpDest = httpObject->GetHttpDest();
-	std::string fileName;
-	std::string ext;
-	size_t offset = 0;
-	offset = httpDest.rfind(L'/') + 1;
-	fileName = httpDest.substr(offset);
-
-	offset = httpDest.rfind(L'.') + 1;
-	ext = httpDest.substr(offset);
-
 	std::stringstream is;
 	is << contentBody->size();
 
 	std::string contentLengthString = is.str();
+	is.str(std::string()); // reset stringstream
 
 	http::AppendStringToVector("Content-Length: ", 16, response);
 	http::AppendStringToVector(contentLengthString.c_str(), contentLengthString.size(), response);
 	http::AppendStringToVector("\r\n", 2, response);
-	http::AppendStringToVector("Server: TCP/IP\r\n", 18, response);
+	http::AppendStringToVector("Server: TCP/IP\r\n", 16, response);
 
-	if (ext == "js")
+	if (isKeepAlive == true)
 	{
-		http::AppendStringToVector("Content-Type: text/javascript\r\n\r\n", 33, response);
+		http::AppendStringToVector("Connection: Keep-alive\r\n", 24, response);
 	}
-	else if (ext == "css")
-	{
-		http::AppendStringToVector("Content-Type: text/css\r\n\r\n", 26, response);
-	}
-	else if (ext == "png")
-	{
-		http::AppendStringToVector("Content-Type: image/png\r\n\r\n", 27, response);
-	}
-	else if (ext == "html")
-	{
-		http::AppendStringToVector("Content-Type: text/html\r\n\r\n", 27, response);
-	}
-	else
-	{
-		http::AppendStringToVector("Content-Type: application/json\r\n\r\n", 34, response);
-	}
+
+	http::AppendStringToVector("Content-Type: ", 14, response);
+	http::AppendStringToVector(httpObject->GetHttpContentType().c_str(), httpObject->GetHttpContentType().size(), response);
+	response.push_back('\r');
+	response.push_back('\n');
+	response.push_back('\r');
+	response.push_back('\n');
 
 	if (contentBody != nullptr)
 	{
@@ -64,6 +43,11 @@ void http::Create200Response(HttpObject* httpObject, const std::vector<int8_t>* 
 			response.push_back(x);
 		}
 	}
+
+	response.push_back('\r');
+	response.push_back('\n');
+	response.push_back('\r');
+	response.push_back('\n');
 }
 
 void http::Create404Response(HttpObject* httpObject, HttpFileContainer* fileContainer, std::vector<int8_t>& response)
@@ -142,4 +126,27 @@ void http::GetServiceNameFromDest(HttpObject* httpObject, std::string& output)
 	size_t offset = 0;
 	offset = httpDest.rfind(L'/') + 1;
 	output = httpDest.substr(offset);
+}
+
+bool http::IsKeepAlive(HttpObject* httpObject)
+{
+	auto connection = httpObject->GetHttpHeaders().find("Connection");
+
+	if (connection == httpObject->GetHttpHeaders().end())
+	{
+		return false;
+	}
+	else
+	{
+		std::string& connectionValue = connection->second;
+
+		if (connectionValue.compare("keep-alive") == 0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 }

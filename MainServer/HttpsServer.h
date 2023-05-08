@@ -54,6 +54,8 @@ public:
 	 * \return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
 	virtual int32_t Run() override;
+
+	virtual void PopClient(std::string& ip) override;
 private:
 	static uint32_t __stdcall checkQuitMessage(void*);
 private:
@@ -68,7 +70,7 @@ private:
 	bool mbIsQuitButtonPressed;
 
 	socket_t mHttpsSocket;
-	std::vector<HttpsClient*> mClients;
+	std::unordered_map<std::string, HttpsClient*> mClients;
 	std::unordered_set<std::string> mBlackLists;
 
 	SRWLOCK* mSRWLock;

@@ -1,20 +1,20 @@
 {
   "IndexPageService": {
     "index": 0,
-    "name": "/",
+    "name": "",
     "file-name": "index.html",
     "method": "GET",
     "level": "USER"
   },
-  "GetArticle": {
+  "GetArticleService": {
     "index": 1,
-    "name": "/getArticle",
+    "name": "getArticle",
     "method": "GET",
     "level": "USER"
   },
-  "GetArticleList": {
+  "GetArticleListService": {
     "index": 2,
-    "name": "/getArticleList",
+    "name": "getArticleList",
     "method": "GET",
     "level": "USER"
   }

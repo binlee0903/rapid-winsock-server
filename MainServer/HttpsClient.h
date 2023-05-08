@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <string>
@@ -21,8 +22,10 @@
 
 class HttpObject;
 
+constexpr uint16_t BASIC_SSL_CHUNK_SIZE = 16384;
 constexpr uint16_t BUFFER_SIZE = 512;
 constexpr uint16_t MAX_REQUEST_SIZE = 1000;
+constexpr uint16_t KEEP_ALIVE_TIME = 5;
 
 using socket_t = decltype(socket(0, 0, 0));
 
@@ -37,7 +40,7 @@ public:
 	};
 
 public:
-	HttpsClient(IServer* server, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket, sockaddr_in clientSockAddr);
+	HttpsClient(IServer* server, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP);
 	~HttpsClient();
 
 	// delete copy constructor and operator for safe
@@ -55,6 +58,8 @@ public:
 	 * @param client pointer to client
 	 */
 	static uint32_t __stdcall Run(void* clientArg);
+
+	const std::string& GetClientAddr() const;
 
 	/**
 	 * check client connection is keep-alive
@@ -80,7 +85,6 @@ public:
 	void ProcessClose();
 private:
 	int8_t writeHttpResponse();
-	void printSocketError();
 	int processSSLHandshake();
 	uint64_t receiveData(std::string* content);
 
@@ -96,6 +100,7 @@ private:
 
 	bool mbIsKeepAlive;
 	bool mbIsSSLConnected;
+	std::chrono::system_clock::time_point mStartTime;
 	uint16_t mRequestCount;
 	std::string mClientAddr;
 };

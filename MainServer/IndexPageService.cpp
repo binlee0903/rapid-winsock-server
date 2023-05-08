@@ -1,5 +1,7 @@
 #include "IndexPageService.h"
 
+IndexPageService* IndexPageService::mIndexPageService = nullptr;
+
 IndexPageService::IndexPageService(std::vector<int8_t>* htmlPage)
 {
 	mServiceName = mHash.GetHashValue(&INDEX_PAGE_SERVICE_NAME);
@@ -19,4 +21,14 @@ IndexPageService* IndexPageService::GetIndexPageServiceInstance(std::vector<int8
 uint64_t IndexPageService::GetServiceName() const
 {
     return mServiceName;
+}
+
+bool IndexPageService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const
+{
+	for (auto& x : *mHtmlPage)
+	{
+		serviceOutput.push_back(x);
+	}
+
+	return true;
 }

@@ -3,7 +3,7 @@
 #include "IService.h"
 #include "HttpFileContainer.h"
 
-const std::string INDEX_PAGE_SERVICE_NAME = "/";
+const std::string INDEX_PAGE_SERVICE_NAME = "";
 
 class IndexPageService final : public IService
 {
@@ -12,7 +12,7 @@ public:
 	~IndexPageService() = default;
 
 	virtual uint64_t GetServiceName() const override;
-	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& response) const override;
+	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const override;
 private:
 	IndexPageService(std::vector<int8_t>* htmlPage);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "IService.h"
 #include "SQLiteConnector.h"
 
@@ -18,5 +20,5 @@ private:
 
 private:
 	static GetArticleListService* mGetArticleListService;
-	static SQLiteConnector* mSQLiteConnector;
+	SQLiteConnector* mSQLiteConnector;
 };

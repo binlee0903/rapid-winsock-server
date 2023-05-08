@@ -35,6 +35,9 @@ public:
 	std::string& GetHttpDest();
 	void SetHttpDest(std::string& httpDest);
 
+	std::string& GetHttpContentType();
+	void SetHttpContentType(const char* httpContentType);
+
 	HttpVersion GetHttpVersion();
 	void SetHttpVersion(std::string& httpVersion);
 
@@ -44,6 +47,7 @@ public:
 private:
 	std::string mHttpMethod;
 	std::string mDest;
+	std::string mContentType;
 	HttpVersion mHttpVersion;
 	std::unordered_map<std::string, std::string> mHttpHeaders;
 };

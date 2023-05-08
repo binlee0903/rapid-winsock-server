@@ -6,7 +6,7 @@
 int32_t main()
 {
 	IServer* server = HttpsServer::GetServer();
-	//HttpServer::Run();
+	HttpServer::Run();
 
 	return server->Run();
 }
