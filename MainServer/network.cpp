@@ -53,7 +53,7 @@ void network::OpenSocket(network::socket_t& targetSocket, uint16_t portNumber, S
 	returnValue = bind(targetSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in));
 	assert(returnValue != SOCKET_ERROR);
 
-	returnValue = listen(targetSocket, MAX_CONNECTION_COUNT);
+	returnValue = listen(targetSocket, MAX_CLIENT_CONNECTION_COUNT);
 	assert(returnValue != SOCKET_ERROR);
 }
 
@@ -73,11 +73,7 @@ void network::ProcessRedirect(socket_t serverSocket)
 	std::stringstream is;
 
 	is << "HTTP/1.1 302 redirect\r\n";
-#if defined _DEBUG
-	is << "Location: https://localhost/\r\n";
-#else
 	is << "Location: https://www.binlee-blog.com/\r\n";
-#endif
 	is << "Content-Type: text/html\r\n";
 	is << "Content-Length: 0\r\n\r\n";
 

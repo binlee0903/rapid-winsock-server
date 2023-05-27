@@ -2,7 +2,7 @@
  * \file   HttpsServer.h
  * \brief  https server that support tls1.3,
  *         this class is singleton
- * 
+ *
  * \author binlee0903
  * \date   February 2023
  *********************************************************************/
@@ -24,15 +24,10 @@
 #include "HttpsClient.h"
 #include "HttpRouter.h"
 
-#ifdef _DEBUG
-	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.crt";
-	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb35\\Documents\\server_cert\\binlee-blog.key";
-#else
-	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.crt.pem";
-	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.key.pem";
-#endif
+constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.crt.pem";
+constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.key.pem";
 
-constexpr uint16_t MAX_CONNECTION_COUNT = 1000; // max clients count
+constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
@@ -44,17 +39,22 @@ public:
 	/**
 	 * return https server's pointer, if server is not constructed, creates it
 	 *
-	 * \return https server's pointer
+	 * @return https server's pointer
 	 */
 	static HttpsServer* GetServer();
 
 	/**
 	 * if this function is called, server will start listen
-	 * 
-	 * \return 0 when q is pressed in console, but if this function return -1, there was an error
+	 *
+	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
 	virtual int32_t Run() override;
 
+	/**
+	 * remove client ip from mClients
+	 * 
+	 * @param ip
+	 */
 	virtual void PopClient(std::string& ip) override;
 private:
 	static uint32_t __stdcall checkQuitMessage(void*);
@@ -73,7 +73,6 @@ private:
 	std::unordered_map<std::string, HttpsClient*> mClients;
 	std::unordered_set<std::string> mBlackLists;
 
-	SRWLOCK* mSRWLock;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
 };

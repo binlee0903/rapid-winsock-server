@@ -66,6 +66,9 @@
     <Filter Include="Header\service">
       <UniqueIdentifier>{f339317e-2d0e-46f5-b36b-35b0ef769dc3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\debugging">
+      <UniqueIdentifier>{20ca42d7-21e3-4d98-812b-603d72b70229}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -186,6 +189,9 @@
     </ClInclude>
     <ClInclude Include="GetArticleListService.h">
       <Filter>Header\service</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugHelper.h">
+      <Filter>Header\debugging</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

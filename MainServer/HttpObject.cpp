@@ -44,7 +44,24 @@ void HttpObject::SetHttpVersion(std::string& httpVersion)
 {
 	constexpr uint16_t FLOAT_VALUE_INDEX = 5;
 
-	float httpVersionFloatValue = std::stof(httpVersion.substr(FLOAT_VALUE_INDEX, httpVersion.size()));
+	if (httpVersion.size() < 5)
+	{
+		mHttpVersion = Http_UNKNOWN;
+		return;
+	}
+
+	std::string buffer = httpVersion.substr(FLOAT_VALUE_INDEX, httpVersion.size());
+	std::stringstream ss{ buffer };
+
+	float httpVersionFloatValue = -1;
+
+	ss >> httpVersionFloatValue;
+
+	if (ss.fail() == true)
+	{
+		mHttpVersion = Http_UNKNOWN;
+		return;
+	}
 
 	if (httpVersionFloatValue == 1.0f)
 	{

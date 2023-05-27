@@ -5,11 +5,8 @@ HttpRouter* HttpRouter::mRouter = nullptr;
 HttpRouter::HttpRouter()
 	: mHttpFileContainer(new HttpFileContainer())
 	, mSQLiteConnector(new SQLiteConnector())
-	, mSRWLock(new SRWLOCK())
 	, mServices()
 {
-	InitializeSRWLock(mSRWLock);
-
 	std::ifstream is;
 	is.open(DEFAULT_JSON_LOCATION);
 
@@ -24,10 +21,10 @@ HttpRouter::HttpRouter()
 	mServices.insert({ mHash.GetHashValue(&serviceName), IndexPageService::GetIndexPageServiceInstance(mHttpFileContainer->GetFile(&pageName)) });
 
 	serviceName = json["GetArticleService"]["name"].asCString();
-	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleService::GetArticleServiceInstance(mSQLiteConnector, mSRWLock) });
+	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleService::GetArticleServiceInstance(mSQLiteConnector) });
 
 	serviceName = json["GetArticleListService"]["name"].asCString();
-	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleListService::GetArticleListServiceInstance(mSQLiteConnector, mSRWLock) });
+	mServices.insert({ mHash.GetHashValue(&serviceName), GetArticleListService::GetArticleListServiceInstance(mSQLiteConnector) });
 }
 
 void HttpRouter::createFileRequestResponse(HttpObject* httpObject, std::vector<int8_t>& response) const
@@ -62,7 +59,6 @@ HttpRouter::~HttpRouter()
 {
 	delete mHttpFileContainer;
 	delete mSQLiteConnector;
-	delete mSRWLock;
 }
 
 HttpRouter* HttpRouter::GetRouter()

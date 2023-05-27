@@ -2,18 +2,17 @@
 
 GetArticleListService* GetArticleListService::mGetArticleListService = nullptr;
 
-GetArticleListService::GetArticleListService(SQLiteConnector* sqliteConnector, SRWLOCK* srwLock)
+GetArticleListService::GetArticleListService(SQLiteConnector* sqliteConnector)
 {
-	mSRWLock = srwLock;
 	mServiceName = mHash.GetHashValue(&GET_ARTICLE_LIST_SERVICE_NAME);
 	mSQLiteConnector = sqliteConnector;
 }
 
-GetArticleListService* GetArticleListService::GetArticleListServiceInstance(SQLiteConnector* sqliteConnector, SRWLOCK* srwLock)
+GetArticleListService* GetArticleListService::GetArticleListServiceInstance(SQLiteConnector* sqliteConnector)
 {
 	if (mGetArticleListService == nullptr)
 	{
-		mGetArticleListService = new GetArticleListService(sqliteConnector, srwLock);
+		mGetArticleListService = new GetArticleListService(sqliteConnector);
 	}
 
 	return mGetArticleListService;
@@ -27,10 +26,18 @@ uint64_t GetArticleListService::GetServiceName() const
 bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const
 {
 	Json::Value articles;
-	AcquireSRWLockExclusive(mSRWLock);
-	int pageIndex = std::stoi(httpObject->GetHttpHeaders().at("Page-Index"));
+	int pageIndex = -1;
+
+	std::stringstream pageIndexStringStream { httpObject->GetHttpHeaders().at("Page-Index") };
+
+	pageIndexStringStream >> pageIndex;
+
+	if (pageIndexStringStream.fail() == true)
+	{
+		return false;
+	}
+
 	mSQLiteConnector->GetArticles(pageIndex, articles);
-	ReleaseSRWLockExclusive(mSRWLock);
 
 	std::stringstream ss;
 	ss << articles;

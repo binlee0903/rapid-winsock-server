@@ -48,7 +48,7 @@ int32_t HttpsServer::Run()
 			}
 			else
 			{
-				mServer->mClients.insert({ buffer, new HttpsClient(mServer, mServer->mSRWLock, mServer->mSSLCTX, clientSocket, buffer)});
+				mServer->mClients.insert({ buffer, new HttpsClient(mServer, mServer->mSSLCTX, clientSocket, buffer)});
 				clientSocket = NULL;
 				ZeroMemory(&clientSockAddr, sizeof(sockaddr));
 			}
@@ -88,10 +88,8 @@ uint32_t __stdcall HttpsServer::checkQuitMessage(void*)
 HttpsServer::HttpsServer()
 	: mbIsQuitButtonPressed(false)
 	, mHttpsSocket(NULL)
-	, mSRWLock(new SRWLOCK())
 {
 	mServer = this;
-	InitializeSRWLock(mSRWLock);
 
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -137,7 +135,6 @@ HttpsServer::~HttpsServer()
 	}
 
 	HttpHelper::DeleteHttpHelper();
-	delete mSRWLock;
 
 	SSL_shutdown(mSSL);
 	SSL_free(mSSL);

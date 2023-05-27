@@ -4,16 +4,8 @@ HttpHelper* HttpHelper::mInstance = nullptr;
 
 HttpHelper::HttpHelper()
 	: mServerHttpVersion("HTTP/1.1")
-	, mDataBase(new SQLiteConnector())
-	, mSRWLock(new SRWLOCK())
 	, mRouter(HttpRouter::GetRouter())
 {
-	InitializeSRWLock(mSRWLock);
-}
-
-HttpHelper::~HttpHelper()
-{
-	delete mSRWLock;
 }
 
 HttpHelper* HttpHelper::GetHttpHelper()
@@ -36,7 +28,7 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>&
 	mRouter->Route(httpObject, response);
 }
 
-void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) const
+bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) const
 {
 	constexpr char BASIC_DELIM = L' ';
 	constexpr char METHOD_DELIM = L':';
@@ -115,4 +107,6 @@ void HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 			httpHeaders.insert({ firstBuffer, secondBuffer.substr(0, offset) });
 		}
 	}
+
+	return true;
 }

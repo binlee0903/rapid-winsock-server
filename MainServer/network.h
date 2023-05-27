@@ -15,7 +15,7 @@ namespace network
 {
 	using socket_t = decltype(socket(0, 0, 0));
 
-	constexpr uint16_t MAX_CONNECTION_COUNT = 1000; // max clients count
+	constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 	constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
 	constexpr uint16_t HTTP_PORT_NUMBER = 80;
 	constexpr uint16_t HTTPS_PORT_NUMBER = 443;

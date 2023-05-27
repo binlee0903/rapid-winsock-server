@@ -1,18 +1,17 @@
 #include "HttpsClient.h"
 
-HttpsClient::HttpsClient(IServer* server, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP)
+SRWLOCK HttpsClient::mSRWLock = { 0 };
+
+HttpsClient::HttpsClient(IServer* server, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP)
 	: mHttpHelper(HttpHelper::GetHttpHelper())
 	, mClientAddr(clientIP)
 	, mSSL(SSL_new(sslCTX))
-	, mSRWLock(srwLock)
 	, mServer(server)
 	, mHttpObject(new HttpObject())
 	, mSocket(clientSocket)
 	, mEventHandle(WSACreateEvent())
 	, mbIsKeepAlive(false)
 	, mbIsSSLConnected(false)
-	, mRequestCount(0)
-	, mStartTime()
 {
 	SSL_set_accept_state(mSSL);
 	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
@@ -28,11 +27,6 @@ HttpsClient::~HttpsClient()
 	closesocket(mSocket);
 }
 
-void HttpsClient::IncreaseRequestCount()
-{
-	mRequestCount++;
-}
-
 uint32_t __stdcall HttpsClient::Run(void* clientArg)
 {
 	HttpsClient* client = reinterpret_cast<HttpsClient*>(clientArg);
@@ -40,22 +34,20 @@ uint32_t __stdcall HttpsClient::Run(void* clientArg)
 	WSANETWORKEVENTS netEvents;
 
 	int retCode = 0;
-	std::chrono::duration<double> elapsedTime;
-	constexpr const std::chrono::seconds keepAliveTime(KEEP_ALIVE_TIME);
 
 	while (true)
 	{
 		WSAWaitForMultipleEvents(1, &client->mEventHandle, false, INFINITE, false);
 		WSAEnumNetworkEvents(client->mSocket, client->mEventHandle, &netEvents);
-		client->mRequestCount++;
 
 		if (netEvents.lNetworkEvents & FD_READ)
 		{
 			retCode = client->ProcessRequest();
 
-			if (retCode != HTTPS_CLIENT_NO_AVAILABLE_DATA)
+			if (retCode == HTTPS_CLIENT_INVALID_HTTP_HEADER)
 			{
-				client->mStartTime = std::chrono::system_clock::now();
+				client->ProcessClose();
+				break;
 			}
 		}
 
@@ -64,17 +56,6 @@ uint32_t __stdcall HttpsClient::Run(void* clientArg)
 			client->ProcessClose();
 			break;
 		}
-
-		/*if (retCode == HTTPS_CLIENT_NO_AVAILABLE_DATA)
-		{
-			elapsedTime = std::chrono::system_clock::now() - client->mStartTime;
-
-			if (elapsedTime > keepAliveTime)
-			{
-				client->ProcessClose();
-				break;
-			}
-		}*/
 	}
 
 	return 0;
@@ -110,7 +91,10 @@ int8_t HttpsClient::ProcessRequest()
 		return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 	}
 
-	mHttpHelper->PrepareResponse(mHttpObject, buffer);
+	if (!mHttpHelper->PrepareResponse(mHttpObject, buffer))
+	{
+		return HTTPS_CLIENT_INVALID_HTTP_HEADER;
+	}
 
 	if (http::IsKeepAlive(mHttpObject) == true)
 	{
@@ -119,9 +103,9 @@ int8_t HttpsClient::ProcessRequest()
 
 	if (mClientAddr.empty() == false)
 	{
-		AcquireSRWLockExclusive(mSRWLock);
+		AcquireSRWLockExclusive(&mSRWLock);
 		std::cout << "Client IP : " << mClientAddr << " Dest : " << mHttpObject->GetHttpDest() << std::endl;
-		ReleaseSRWLockExclusive(mSRWLock);
+		ReleaseSRWLockExclusive(&mSRWLock);
 	}
 
 	return writeHttpResponse();
@@ -159,12 +143,12 @@ int8_t HttpsClient::writeHttpResponse()
 
 		if (sslErrorCode != SSL_ERROR_NONE)
 		{
-			AcquireSRWLockExclusive(mSRWLock);
+			AcquireSRWLockExclusive(&mSRWLock);
 			std::cout << "ssl write failed, error Code : " << sslErrorCode << std::endl;
 			int ret = ERR_get_error();
 			ERR_error_string_n(ret, buffer, 512);
 			std::cout << buffer << std::endl;
-			ReleaseSRWLockExclusive(mSRWLock);
+			ReleaseSRWLockExclusive(&mSRWLock);
 			return HTTPS_CLIENT_ERROR;
 		}
 
@@ -176,10 +160,10 @@ int8_t HttpsClient::writeHttpResponse()
 
 void HttpsClient::ProcessClose()
 {
-	AcquireSRWLockExclusive(mSRWLock);
+	AcquireSRWLockExclusive(&mSRWLock);
 	std::cout << "Client Disconnected : " << mClientAddr << std::endl;
+	ReleaseSRWLockExclusive(&mSRWLock);
 	mServer->PopClient(mClientAddr);
-	ReleaseSRWLockExclusive(mSRWLock);
 	delete this;
 	_endthreadex(0);
 }
@@ -242,11 +226,11 @@ int HttpsClient::processSSLHandshake()
 		}
 		else if (errorCode != SSL_ERROR_NONE)
 		{
-			AcquireSRWLockExclusive(mSRWLock);
+			AcquireSRWLockExclusive(&mSRWLock);
 			std::cout << "ssl accept failed, error Code : " << errorCode << std::endl;
 			ERR_error_string_n(ERR_get_error(), buffer, 512);
 			std::cout << buffer << std::endl;
-			ReleaseSRWLockExclusive(mSRWLock);
+			ReleaseSRWLockExclusive(&mSRWLock);
 			ProcessClose();
 			return HTTPS_CLIENT_ERROR;
 		}

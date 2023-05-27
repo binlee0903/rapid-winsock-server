@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <chrono>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <string>
@@ -36,21 +35,17 @@ public:
 	{
 		HTTPS_CLIENT_OK,
 		HTTPS_CLIENT_ERROR,
-		HTTPS_CLIENT_NO_AVAILABLE_DATA
+		HTTPS_CLIENT_NO_AVAILABLE_DATA,
+		HTTPS_CLIENT_INVALID_HTTP_HEADER
 	};
 
 public:
-	HttpsClient(IServer* server, SRWLOCK* srwLock, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP);
+	HttpsClient(IServer* server, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP);
 	~HttpsClient();
 
 	// delete copy constructor and operator for safe
 	HttpsClient(const HttpsClient& rhs) = delete;
 	HttpsClient& operator=(HttpsClient& rhs) = delete;
-
-	/**
-	 * Increase mRequestCount when http request has arrived
-	 */
-	void IncreaseRequestCount();
 
 	/**
 	 * when client is accepted, this function will run
@@ -59,6 +54,11 @@ public:
 	 */
 	static uint32_t __stdcall Run(void* clientArg);
 
+	/**
+	 * return client address string
+	 * 
+	 * @return 
+	 */
 	const std::string& GetClientAddr() const;
 
 	/**
@@ -89,9 +89,10 @@ private:
 	uint64_t receiveData(std::string* content);
 
 private:
+	static SRWLOCK mSRWLock;
+
 	HttpHelper* mHttpHelper;
 	SSL* mSSL;
-	SRWLOCK* mSRWLock;
 	IServer* mServer;
 	HttpObject* mHttpObject;
 
@@ -100,7 +101,5 @@ private:
 
 	bool mbIsKeepAlive;
 	bool mbIsSSLConnected;
-	std::chrono::system_clock::time_point mStartTime;
-	uint16_t mRequestCount;
 	std::string mClientAddr;
 };

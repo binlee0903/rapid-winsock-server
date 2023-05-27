@@ -80,6 +80,7 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
@@ -152,6 +153,7 @@
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -185,6 +187,7 @@
   <ItemGroup>
     <ClInclude Include="ArticleObject.h" />
     <ClInclude Include="base64.h" />
+    <ClInclude Include="DebugHelper.h" />
     <ClInclude Include="GetAriticleService.h" />
     <ClInclude Include="GetArticleListService.h" />
     <ClInclude Include="Hash.h" />
