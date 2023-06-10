@@ -1,6 +1,7 @@
 #include "GetAriticleService.h"
 
 GetArticleService* GetArticleService::mGetArticleService = nullptr;
+SRWLOCK GetArticleService::mSRWLock = { 0 };
 
 GetArticleService::GetArticleService(SQLiteConnector* sqliteConnector)
 {
@@ -37,7 +38,9 @@ bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& service
 		return false;
 	}
 
+	AcquireSRWLockExclusive(&mSRWLock);
 	mSQLiteConnector->GetArticle(ArticleNumber, article);
+	ReleaseSRWLockExclusive(&mSRWLock);
 
 	std::stringstream ss;
 	ss << article;

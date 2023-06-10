@@ -20,5 +20,6 @@ private:
 
 private:
 	static GetArticleListService* mGetArticleListService;
+	static SRWLOCK mSRWLock;
 	SQLiteConnector* mSQLiteConnector;
 };
