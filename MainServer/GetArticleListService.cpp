@@ -29,7 +29,14 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 	Json::Value articles;
 	int pageIndex = -1;
 
-	std::stringstream pageIndexStringStream { httpObject->GetHttpHeaders().at("Page-Index") };
+	auto& headers = httpObject->GetHttpHeaders();
+
+	if (headers.find("Page-Index") == headers.end())
+	{
+		return false;
+	}
+
+	std::stringstream pageIndexStringStream { headers.at("Page-Index") };
 
 	pageIndexStringStream >> pageIndex;
 

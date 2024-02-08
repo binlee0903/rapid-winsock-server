@@ -67,8 +67,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
-    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\spdlog\build\MinSizeRel;C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>C:\Users\egb35\Documents\spdlog\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <ExecutablePath>$(VC_ExecutablePath_x64);$(CommonExecutablePath);$(ExecutablePath)</ExecutablePath>
@@ -76,8 +76,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ExternalIncludePath>C:\Users\egb35\Documents\jsoncpp-1.9.5\include;C:\Users\egb35\Documents\sqlite-amalgamation-3410200;C:\Program Files\OpenSSL\include</ExternalIncludePath>
-    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\egb35\Documents\sqlite-dll-win64-x64-3410200;C:\Users\egb35\Documents\jsoncpp-1.9.5\json_git\lib\Release;C:\Program Files\OpenSSL\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Users\egb35\Documents\spdlog\build\MinSizeRel</LibraryPath>
+    <IncludePath>C:\Users\egb35\Documents\spdlog\include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
@@ -140,7 +140,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib;spdlog.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -160,7 +160,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib</AdditionalDependencies>
+      <AdditionalDependencies>WS2_32.lib;libcrypto.lib;libssl.lib;jsoncpp.lib;sqlite3.lib;spdlog.lib</AdditionalDependencies>
+      <AdditionalOptions>/DEBUG:FULL %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
