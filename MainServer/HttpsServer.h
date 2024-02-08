@@ -24,8 +24,8 @@
 #include "HttpsClient.h"
 #include "HttpRouter.h"
 
-constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.crt.pem";
-constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20230212664E0.key.pem";
+constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.crt.pem";
+constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
 
 constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
