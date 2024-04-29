@@ -1,12 +1,11 @@
-#include "HttpsClient.h"
+﻿#include "ClientWork.h"
 
-SRWLOCK HttpsClient::mSRWLock = { 0 };
+SRWLOCK ClientWork::mSRWLock = { 0 };
 
-HttpsClient::HttpsClient(IServer* server, SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP)
+ClientWork::ClientWork(SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP)
 	: mHttpHelper(HttpHelper::GetHttpHelper())
 	, mClientAddr(clientIP)
 	, mSSL(SSL_new(sslCTX))
-	, mServer(server)
 	, mHttpObject(new HttpObject())
 	, mSocket(clientSocket)
 	, mEventHandle(WSACreateEvent())
@@ -15,10 +14,9 @@ HttpsClient::HttpsClient(IServer* server, SSL_CTX* sslCTX, socket_t clientSocket
 {
 	SSL_set_accept_state(mSSL);
 	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
-	_beginthreadex(nullptr, 0, &HttpsClient::Run, this, NULL, nullptr);
 }
 
-HttpsClient::~HttpsClient()
+ClientWork::~ClientWork()
 {
 	SSL_shutdown(mSSL);
 	SSL_free(mSSL);
@@ -27,51 +25,49 @@ HttpsClient::~HttpsClient()
 	closesocket(mSocket);
 }
 
-uint32_t __stdcall HttpsClient::Run(void* clientArg)
+ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 {
-	HttpsClient* client = reinterpret_cast<HttpsClient*>(clientArg);
-
 	WSANETWORKEVENTS netEvents;
 
 	int retCode = 0;
 
 	while (true)
 	{
-		WSAWaitForMultipleEvents(1, &client->mEventHandle, false, INFINITE, false);
-		WSAEnumNetworkEvents(client->mSocket, client->mEventHandle, &netEvents);
+		WSAWaitForMultipleEvents(1, &mEventHandle, false, INFINITE, false);
+		WSAEnumNetworkEvents(mSocket, mEventHandle, &netEvents);
 
 		if (netEvents.lNetworkEvents & FD_READ)
 		{
-			retCode = client->ProcessRequest();
+			retCode = ProcessRequest();
 
 			if (retCode == HTTPS_CLIENT_INVALID_HTTP_HEADER)
 			{
-				client->ProcessClose();
+				ProcessClose();
 				break;
 			}
 		}
 
 		if (netEvents.lNetworkEvents & FD_CLOSE)
 		{
-			client->ProcessClose();
+			ProcessClose();
 			break;
 		}
 	}
 
-	return 0;
+	return ERROR_NONE;
 }
 
-const std::string& HttpsClient::GetClientAddr() const
+const std::string& ClientWork::GetClientAddr() const
 {
 	return mClientAddr;
 }
 
-bool HttpsClient::IsKeepAlive()
+bool ClientWork::IsKeepAlive() const
 {
 	return mbIsKeepAlive;
 }
 
-int8_t HttpsClient::ProcessRequest()
+int8_t ClientWork::ProcessRequest()
 {
 	if (mbIsSSLConnected == false)
 	{
@@ -111,7 +107,7 @@ int8_t HttpsClient::ProcessRequest()
 	return writeHttpResponse();
 }
 
-int8_t HttpsClient::writeHttpResponse()
+int8_t ClientWork::writeHttpResponse()
 {
 	std::vector<int8_t> response;
 	response.reserve(BUFFER_SIZE);
@@ -158,17 +154,15 @@ int8_t HttpsClient::writeHttpResponse()
 	return HTTPS_CLIENT_OK;
 }
 
-void HttpsClient::ProcessClose()
+void ClientWork::ProcessClose() const
 {
 	AcquireSRWLockExclusive(&mSRWLock);
 	std::cout << "Client Disconnected : " << mClientAddr << std::endl;
 	ReleaseSRWLockExclusive(&mSRWLock);
-	mServer->PopClient(mClientAddr);
 	delete this;
-	_endthreadex(0);
 }
 
-uint64_t HttpsClient::receiveData(std::string* content)
+uint64_t ClientWork::receiveData(std::string* content)
 {
 	uint8_t buffer[BUFFER_SIZE];
 
@@ -205,7 +199,7 @@ uint64_t HttpsClient::receiveData(std::string* content)
 	return recvLenSum;
 }
 
-int HttpsClient::processSSLHandshake()
+int ClientWork::processSSLHandshake()
 {
 	SSL_set_fd(mSSL, static_cast<int>(mSocket));
 

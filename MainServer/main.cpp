@@ -7,7 +7,7 @@
 int32_t main()
 {
 	SetUnhandledExceptionFilter(CrashHandlerThatCreateDumpFileCallBack);
-	IServer* server = HttpsServer::GetServer();
+	HttpsServer* server = HttpsServer::GetServer();
 	HttpServer::Run();
 
 	return server->Run();

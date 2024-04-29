@@ -48,7 +48,7 @@ int32_t HttpsServer::Run()
 			}
 			else
 			{
-				mServer->mClients.insert({ buffer, new HttpsClient(mServer, mServer->mSSLCTX, clientSocket, buffer)});
+				mClientThreadPool->QueueWork(new ClientWork(mSSLCTX, clientSocket, buffer));
 				clientSocket = NULL;
 				ZeroMemory(&clientSockAddr, sizeof(sockaddr));
 			}
@@ -63,11 +63,6 @@ int32_t HttpsServer::Run()
 	WSACloseEvent(eventHandle);
 	delete this;
 	return 0;
-}
-
-void HttpsServer::PopClient(std::string& ip)
-{
-	mClients.erase(ip);
 }
 
 uint32_t __stdcall HttpsServer::checkQuitMessage(void*)
@@ -87,6 +82,7 @@ uint32_t __stdcall HttpsServer::checkQuitMessage(void*)
 // common functions
 HttpsServer::HttpsServer()
 	: mbIsQuitButtonPressed(false)
+	, mClientThreadPool(new ClientThreadPool())
 	, mHttpsSocket(NULL)
 {
 	mServer = this;
@@ -129,10 +125,7 @@ HttpsServer::HttpsServer()
 
 HttpsServer::~HttpsServer()
 {
-	for (auto x : mClients)
-	{
-		delete x.second;
-	}
+	delete mClientThreadPool;
 
 	HttpHelper::DeleteHttpHelper();
 
