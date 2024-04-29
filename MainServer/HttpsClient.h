@@ -19,8 +19,6 @@
 #include "HttpObject.h"
 #include "HttpHelper.h"
 
-class HttpObject;
-
 constexpr uint16_t BASIC_SSL_CHUNK_SIZE = 16384;
 constexpr uint16_t BUFFER_SIZE = 512;
 constexpr uint16_t MAX_REQUEST_SIZE = 1000;
