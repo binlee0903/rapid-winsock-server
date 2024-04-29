@@ -21,11 +21,16 @@
 #include <synchapi.h>
 
 #include "network.h"
-#include "HttpsClient.h"
+#include "ClientThreadPool.h"
 #include "HttpRouter.h"
 
-constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.crt.pem";
-constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
+#ifdef _DEBUG
+	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb35\\Documents\\server-cert\\server.crt";
+	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb35\\Documents\\server-cert\\server.key";
+#else
+	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.crt.pem";
+	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
+#endif
 
 constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
@@ -33,7 +38,7 @@ constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
 
-class HttpsServer final : public IServer
+class HttpsServer final
 {
 public:
 	/**
@@ -48,14 +53,7 @@ public:
 	 *
 	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
-	virtual int32_t Run() override;
-
-	/**
-	 * remove client ip from mClients
-	 * 
-	 * @param ip
-	 */
-	virtual void PopClient(std::string& ip) override;
+	virtual int32_t Run();
 private:
 	static uint32_t __stdcall checkQuitMessage(void*);
 private:
@@ -70,9 +68,8 @@ private:
 	bool mbIsQuitButtonPressed;
 
 	socket_t mHttpsSocket;
-	std::unordered_map<std::string, HttpsClient*> mClients;
-	std::unordered_set<std::string> mBlackLists;
-
+	
+	ClientThreadPool* mClientThreadPool;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
 };
