@@ -137,6 +137,9 @@
     <ClCompile Include="ClientThreadPool.cpp">
       <Filter>Source\threadPool</Filter>
     </ClCompile>
+    <ClCompile Include="ClientSession.h">
+      <Filter>Header\https</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h">
@@ -204,6 +207,9 @@
     </ClInclude>
     <ClInclude Include="ClientWork.h">
       <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSessionType.h">
+      <Filter>Header\https</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

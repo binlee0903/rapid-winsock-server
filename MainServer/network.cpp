@@ -73,7 +73,12 @@ void network::ProcessRedirect(socket_t serverSocket)
 	std::stringstream is;
 
 	is << "HTTP/1.1 302 redirect\r\n";
+
+#ifdef _DEBUG
+	is << "Location: https://localhost/\r\n";
+#else
 	is << "Location: https://www.binlee-blog.com/\r\n";
+#endif
 	is << "Content-Type: text/html\r\n";
 	is << "Content-Length: 0\r\n\r\n";
 

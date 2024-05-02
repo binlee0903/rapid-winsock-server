@@ -168,6 +168,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="base64.cpp" />
+    <ClCompile Include="ClientSession.h" />
     <ClCompile Include="GetAriticleService.cpp" />
     <ClCompile Include="GetArticleListService.cpp" />
     <ClCompile Include="Hash.cpp" />
@@ -191,6 +192,7 @@
   <ItemGroup>
     <ClInclude Include="ArticleObject.h" />
     <ClInclude Include="base64.h" />
+    <ClInclude Include="ClientSessionType.h" />
     <ClInclude Include="ClientWork.h" />
     <ClInclude Include="DebugHelper.h" />
     <ClInclude Include="GetAriticleService.h" />
