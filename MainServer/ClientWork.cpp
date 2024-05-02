@@ -2,81 +2,54 @@
 
 SRWLOCK ClientWork::mSRWLock = { 0 };
 
-ClientWork::ClientWork(SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP)
+ClientWork::ClientWork(ClientSession* clientSession, ClientSessionType sessionType)
 	: mHttpHelper(HttpHelper::GetHttpHelper())
-	, mClientAddr(clientIP)
-	, mSSL(SSL_new(sslCTX))
 	, mHttpObject(new HttpObject())
-	, mSocket(clientSocket)
-	, mEventHandle(WSACreateEvent())
-	, mbIsKeepAlive(false)
-	, mbIsSSLConnected(false)
+	, mClientSession(clientSession)
+	, mClientSessionType(sessionType)
 {
-	SSL_set_accept_state(mSSL);
-	WSAEventSelect(mSocket, mEventHandle, FD_READ | FD_CLOSE);
+	if (sessionType == ClientSessionType::SESSION_READ)
+	{
+		mClientSession->processingCount += 1;
+	}
 }
 
 ClientWork::~ClientWork()
-{
-	SSL_shutdown(mSSL);
-	SSL_free(mSSL);
+{	
 	delete mHttpObject;
-	WSACloseEvent(mEventHandle);
-	closesocket(mSocket);
 }
 
 ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 {
-	WSANETWORKEVENTS netEvents;
-
-	int retCode = 0;
-
-	while (true)
+	switch (mClientSessionType)
 	{
-		WSAWaitForMultipleEvents(1, &mEventHandle, false, INFINITE, false);
-		WSAEnumNetworkEvents(mSocket, mEventHandle, &netEvents);
-
-		if (netEvents.lNetworkEvents & FD_READ)
-		{
-			retCode = ProcessRequest();
-
-			if (retCode == HTTPS_CLIENT_INVALID_HTTP_HEADER)
-			{
-				ProcessClose();
-				break;
-			}
-		}
-
-		if (netEvents.lNetworkEvents & FD_CLOSE)
-		{
-			ProcessClose();
+		case ClientSessionType::SESSION_READ:
+			ProcessRequest();
+			mClientSession->processingCount -= 1;
 			break;
-		}
+
+		case ClientSessionType::SESSION_CLOSE:
+			if (IsProcessing() == true)
+			{
+				return ERROR_CLOSE_BEFORE_WORK_DONE;
+			}
+
+			closeConnection();
+			break;
 	}
+
+	finishWork();
 
 	return ERROR_NONE;
 }
 
-const std::string& ClientWork::GetClientAddr() const
+bool ClientWork::IsProcessing() const
 {
-	return mClientAddr;
-}
-
-bool ClientWork::IsKeepAlive() const
-{
-	return mbIsKeepAlive;
+	return mClientSession->processingCount > 0;
 }
 
 int8_t ClientWork::ProcessRequest()
 {
-	if (mbIsSSLConnected == false)
-	{
-		if (processSSLHandshake() != 0)
-		{
-			return HTTPS_CLIENT_ERROR;
-		}
-	}
-
 	std::string buffer;
 	buffer.reserve(BUFFER_SIZE * 2);
 
@@ -90,18 +63,6 @@ int8_t ClientWork::ProcessRequest()
 	if (!mHttpHelper->PrepareResponse(mHttpObject, buffer))
 	{
 		return HTTPS_CLIENT_INVALID_HTTP_HEADER;
-	}
-
-	if (http::IsKeepAlive(mHttpObject) == true)
-	{
-		mbIsKeepAlive = true;
-	}
-
-	if (mClientAddr.empty() == false)
-	{
-		AcquireSRWLockExclusive(&mSRWLock);
-		std::cout << "Client IP : " << mClientAddr << " Dest : " << mHttpObject->GetHttpDest() << std::endl;
-		ReleaseSRWLockExclusive(&mSRWLock);
 	}
 
 	return writeHttpResponse();
@@ -128,14 +89,14 @@ int8_t ClientWork::writeHttpResponse()
 
 		if (responseSize - wroteSize >= BASIC_SSL_CHUNK_SIZE)
 		{
-			sslErrorCode = SSL_write_ex(mSSL, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
 		}
 		else
 		{
-			sslErrorCode = SSL_write_ex(mSSL, &response[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
 		}
 
-		sslErrorCode = SSL_get_error(mSSL, sslErrorCode);
+		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
 
 		if (sslErrorCode != SSL_ERROR_NONE)
 		{
@@ -154,12 +115,19 @@ int8_t ClientWork::writeHttpResponse()
 	return HTTPS_CLIENT_OK;
 }
 
-void ClientWork::ProcessClose() const
+void ClientWork::finishWork() const
 {
-	AcquireSRWLockExclusive(&mSRWLock);
-	std::cout << "Client Disconnected : " << mClientAddr << std::endl;
-	ReleaseSRWLockExclusive(&mSRWLock);
 	delete this;
+}
+
+void ClientWork::closeConnection()
+{
+	delete mClientSession->ip;
+	SSL_shutdown(mClientSession->clientSSLConnection);
+	WSACloseEvent(mClientSession->eventHandle);
+	SSL_free(mClientSession->clientSSLConnection);
+	closesocket(mClientSession->clientSocket);
+	delete mClientSession;
 }
 
 uint64_t ClientWork::receiveData(std::string* content)
@@ -171,7 +139,7 @@ uint64_t ClientWork::receiveData(std::string* content)
 	size_t receivedDataLength = 0;
 	uint64_t recvLenSum = 0;
 
-	if (ioctlsocket(mSocket, FIONREAD, &avaliableDataSize) != 0)
+	if (ioctlsocket(mClientSession->clientSocket, FIONREAD, &avaliableDataSize) != 0)
 	{
 		return 0;
 	}
@@ -180,8 +148,8 @@ uint64_t ClientWork::receiveData(std::string* content)
 	{
 		ERR_clear_error();
 		ZeroMemory(buffer, sizeof(buffer));
-		sslErrorCode = SSL_read_ex(mSSL, buffer, BUFFER_SIZE, &receivedDataLength);
-		sslErrorCode = SSL_get_error(mSSL, sslErrorCode);
+		sslErrorCode = SSL_read_ex(mClientSession->clientSSLConnection, buffer, BUFFER_SIZE, &receivedDataLength);
+		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
 
 		if (receivedDataLength != 0)
 		{
@@ -193,43 +161,8 @@ uint64_t ClientWork::receiveData(std::string* content)
 			recvLenSum += receivedDataLength;
 		}
 
-		avaliableDataSize = SSL_pending(mSSL);
+		avaliableDataSize = SSL_pending(mClientSession->clientSSLConnection);
 	} while (avaliableDataSize != 0);
 
 	return recvLenSum;
-}
-
-int ClientWork::processSSLHandshake()
-{
-	SSL_set_fd(mSSL, static_cast<int>(mSocket));
-
-	int retCode = 0;
-	int errorCode = 0;
-	char buffer[512];
-	ZeroMemory(buffer, 512);
-
-	while (retCode <= 0)
-	{
-		ERR_clear_error();
-		retCode = SSL_accept(mSSL);
-		errorCode = SSL_get_error(mSSL, retCode);
-
-		if (errorCode == SSL_ERROR_WANT_READ)
-		{
-			continue;
-		}
-		else if (errorCode != SSL_ERROR_NONE)
-		{
-			AcquireSRWLockExclusive(&mSRWLock);
-			std::cout << "ssl accept failed, error Code : " << errorCode << std::endl;
-			ERR_error_string_n(ERR_get_error(), buffer, 512);
-			std::cout << buffer << std::endl;
-			ReleaseSRWLockExclusive(&mSRWLock);
-			ProcessClose();
-			return HTTPS_CLIENT_ERROR;
-		}
-	}
-
-	mbIsSSLConnected = true;
-	return HTTPS_CLIENT_OK;
 }

@@ -2,26 +2,42 @@
 
 #include "ClientWork.h"
 
-constexpr uint16_t THREAD_COUNT = 2;
+constexpr uint16_t THREAD_COUNT = 1;
 
 class ClientThreadPool final
 {
 public:
-	ClientThreadPool();
+	enum THREAD_EVENT
+	{
+		THREAD_SIGNAL,
+		THREAD_CLOSE
+	};
+
+public:
 	~ClientThreadPool();
 
+	static ClientThreadPool* GetInstance();
 	static ClientWork* GetClientWork();
 
 	void QueueWork(ClientWork* clientWork);
+	void Signal(THREAD_EVENT threadEvent);
+	void Init();
+
+	bool IsQueueEmpty() const;
 
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
 
 private:
-	static std::queue<ClientWork*> mClientWorks;
+	ClientThreadPool();
 
-	bool** mThreadTerminateFlags;
+private:
+	static ClientThreadPool* mInstance;
+
+	std::queue<ClientWork*> mClientWorks;
+
 	HANDLE* mThreads;
-	DWORD* mThreadIDs;
 	uint16_t mThreadCount;
+	std::vector<HANDLE> mEventHandles;
+	SRWLOCK* mSRWLock;
 };

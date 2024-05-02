@@ -13,6 +13,7 @@
 #include <openssl/err.h>
 
 #include "HttpHelper.h"
+#include "ClientSession.h"
 
 using socket_t = decltype(socket(0, 0, 0));
 
@@ -26,7 +27,8 @@ class ClientWork final
 public:
 	enum ERROR_CODE
 	{
-		ERROR_NONE
+		ERROR_NONE,
+		ERROR_CLOSE_BEFORE_WORK_DONE
 	};
 
 	enum STATUS : int8_t
@@ -37,7 +39,7 @@ public:
 		HTTPS_CLIENT_INVALID_HTTP_HEADER
 	};
 
-	ClientWork(SSL_CTX* sslCTX, socket_t clientSocket, std::string& clientIP);
+	ClientWork(ClientSession* clientSession, ClientSessionType sessionType);
 	~ClientWork();
 
 	// delete copy constructor and operator for safe
@@ -51,19 +53,7 @@ public:
 	 */
 	ERROR_CODE Run(void* clientArg);
 
-	/**
-	 * return client address string
-	 *
-	 * @return
-	 */
-	const std::string& GetClientAddr() const;
-
-	/**
-	 * check client connection is keep-alive
-	 *
-	 * @return return true if connection is keep-alive
-	 */
-	bool IsKeepAlive() const;
+	bool IsProcessing() const;
 
 	/**
 	 * process https requests.
@@ -74,28 +64,19 @@ public:
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
 	int8_t ProcessRequest();
-
-	/**
-	 * this will call destructor,
-	 * and close socket
-	 */
-	void ProcessClose() const;
 private:
+	void closeConnection();
+	void finishWork() const;
+
 	int8_t writeHttpResponse();
-	int processSSLHandshake();
 	uint64_t receiveData(std::string* content);
 
 private:
 	static SRWLOCK mSRWLock;
 
 	HttpHelper* mHttpHelper;
-	SSL* mSSL;
 	HttpObject* mHttpObject;
 
-	socket_t mSocket;
-	HANDLE mEventHandle;
-
-	bool mbIsKeepAlive;
-	bool mbIsSSLConnected;
-	std::string mClientAddr;
+	ClientSession* mClientSession;
+	ClientSessionType mClientSessionType;
 };
