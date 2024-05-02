@@ -69,6 +69,12 @@
     <Filter Include="Header\debugging">
       <UniqueIdentifier>{20ca42d7-21e3-4d98-812b-603d72b70229}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\threadPool">
+      <UniqueIdentifier>{869b818e-f7e6-4e79-9a24-6d8bcd724549}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\threadPool">
+      <UniqueIdentifier>{8fe7e11a-3b62-4084-ad90-e88c347cb07b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -91,9 +97,6 @@
     </ClCompile>
     <ClCompile Include="HttpFileContainer.cpp">
       <Filter>Source\http</Filter>
-    </ClCompile>
-    <ClCompile Include="HttpsClient.cpp">
-      <Filter>Source\https</Filter>
     </ClCompile>
     <ClCompile Include="HttpsServer.cpp">
       <Filter>Source\https</Filter>
@@ -128,6 +131,15 @@
     <ClCompile Include="GetArticleListService.cpp">
       <Filter>Source\service</Filter>
     </ClCompile>
+    <ClCompile Include="ClientWork.cpp">
+      <Filter>Source\threadPool</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientThreadPool.cpp">
+      <Filter>Source\threadPool</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientSession.h">
+      <Filter>Header\https</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h">
@@ -156,9 +168,6 @@
     </ClInclude>
     <ClInclude Include="SQLiteSQLStatements.h">
       <Filter>Header\sql</Filter>
-    </ClInclude>
-    <ClInclude Include="HttpsClient.h">
-      <Filter>Header\https</Filter>
     </ClInclude>
     <ClInclude Include="HttpsServer.h">
       <Filter>Header\https</Filter>
@@ -192,6 +201,15 @@
     </ClInclude>
     <ClInclude Include="DebugHelper.h">
       <Filter>Header\debugging</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientThreadPool.h">
+      <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientWork.h">
+      <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSessionType.h">
+      <Filter>Header\https</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

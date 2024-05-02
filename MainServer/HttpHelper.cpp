@@ -42,9 +42,17 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 
 	// read first line of http text
 	std::getline(is, firstBuffer, BASIC_DELIM);
+	if (is.fail() == true || firstBuffer != "GET")
+	{
+		return false;
+	}
 	httpObject->SetHttpMethod(firstBuffer);
 
 	std::getline(is, firstBuffer, BASIC_DELIM);
+	if (is.fail() == true)
+	{
+		return false;
+	}
 	size_t offset = firstBuffer.rfind(L'/') + 1;
 	firstBuffer = firstBuffer.substr(offset);
 	size_t rearOffset = firstBuffer.rfind('?');
@@ -79,6 +87,10 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	}
 
 	std::getline(is, firstBuffer);
+	if (is.fail() == true)
+	{
+		return false;
+	}
 	httpObject->SetHttpVersion(firstBuffer);
 	is.ignore(LLONG_MAX, '\n');
 

@@ -21,15 +21,13 @@ uint32_t __stdcall HttpServer::redirectToHttps(void*)
 
 	while (true)
 	{
-		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_WAIT_TIMEOUT, false);
+		WSAWaitForMultipleEvents(1, &eventHandle, false, WSA_INFINITE, false);
 		WSAEnumNetworkEvents(mHttpSocket, eventHandle, &netEvents);
 
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
 			network::ProcessRedirect(mHttpSocket);
-			continue;
-		default:
 			continue;
 		}
 	}
