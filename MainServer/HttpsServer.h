@@ -20,7 +20,6 @@
 #include <process.h>
 #include <synchapi.h>
 
-#include "network.h"
 #include "ClientThreadPool.h"
 #include "HttpRouter.h"
 
@@ -38,6 +37,16 @@ constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
 
+#ifdef   _DEBUG
+#define  SET_CRT_DEBUG_FIELD(a) \
+            _CrtSetDbgFlag((a) | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG))
+#define  CLEAR_CRT_DEBUG_FIELD(a) \
+            _CrtSetDbgFlag(~(a) & _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG))
+#else
+#define  SET_CRT_DEBUG_FIELD(a)   ((void) 0)
+#define  CLEAR_CRT_DEBUG_FIELD(a) ((void) 0)
+#endif
+
 class HttpsServer final
 {
 public:
@@ -54,23 +63,29 @@ public:
 	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
 	virtual int32_t Run();
+
+	int ProcessSSLHandshake(ClientSession* clientSession);
 private:
-	static uint32_t __stdcall checkQuitMessage(void*);
+	static DWORD __stdcall checkQuitMessage(LPVOID lpParam);
 private:
 	HttpsServer();
 	~HttpsServer();
 
-	void sendRedirectMessage(socket_t clientSocket);
 	void printSocketError();
+	void eraseClient(uint32_t index);
 private:
 	static HttpsServer* mServer;
 
 	bool mbIsQuitButtonPressed;
+	uint32_t mSessionIDSequence;
 
 	socket_t mHttpsSocket;
 	
 	ClientThreadPool* mClientThreadPool;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
+
+	std::vector<ClientSession*> mClientSessions;
+	std::vector<HANDLE> mClientEventHandles;
 };
 
