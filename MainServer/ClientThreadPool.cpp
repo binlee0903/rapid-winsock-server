@@ -7,6 +7,7 @@ ClientThreadPool::ClientThreadPool()
 	, mThreadCount(THREAD_COUNT)
 	, mEventHandles()
 	, mSRWLock(new SRWLOCK())
+	, mThreadsRunningState(new bool[THREAD_COUNT])
 {
 	mEventHandles.reserve(THREAD_COUNT);
 }
@@ -21,10 +22,12 @@ ClientThreadPool::~ClientThreadPool()
 
 	delete mSRWLock;
 	delete[] mThreads;
+	delete[] mThreadsRunningState;
 }
 
 DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 {
+	bool* runningState = reinterpret_cast<bool*>(lpParam);
 	ClientWork::ERROR_CODE error_code;
 	ClientWork* clientWork;
 	uint32_t index = 0;
@@ -51,7 +54,9 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 				continue;
 			}
 
+			*runningState = true;
 			error_code = clientWork->Run(nullptr);
+			*runningState = false;
 
 			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
 			{
@@ -100,13 +105,22 @@ void ClientThreadPool::Init()
 
 	for (uint16_t i = 0; i < mThreadCount; i++)
 	{
-		mThreads[i] = CreateThread(nullptr, NULL, &ClientThreadPool::Run, nullptr, NULL, nullptr);
+		mThreads[i] = CreateThread(nullptr, NULL, &ClientThreadPool::Run, mThreadsRunningState + i, NULL, nullptr);
+		mThreadsRunningState[i] = false;
 	}
 }
 
-bool ClientThreadPool::IsQueueEmpty() const
+bool ClientThreadPool::IsThreadsRunning() const
 {
-	return mClientWorks.empty();
+	for (uint16_t i = 0; i < mThreadCount; i++)
+	{
+		if (mInstance->mThreadsRunningState[i] == true)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 ClientThreadPool* ClientThreadPool::GetInstance()

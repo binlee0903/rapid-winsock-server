@@ -14,7 +14,7 @@
 class HttpHelper final
 {
 public:
-	~HttpHelper() = default;
+	~HttpHelper();
 
 	HttpHelper& operator=(const HttpHelper& rhs) = delete;
 	HttpHelper(const HttpHelper& rhs) = delete;
