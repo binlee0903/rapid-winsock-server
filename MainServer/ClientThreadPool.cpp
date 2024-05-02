@@ -56,7 +56,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 			*runningState = true;
 			error_code = clientWork->Run(nullptr);
-			*runningState = false;
 
 			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
 			{
@@ -64,6 +63,7 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 				mInstance->Signal(THREAD_SIGNAL);
 			}
 
+			*runningState = false;
 			// TODO: handle more error
 			break;
 
