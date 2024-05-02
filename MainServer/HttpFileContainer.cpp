@@ -13,13 +13,16 @@ HttpFileContainer::HttpFileContainer()
     fileStreamsAndSize.reserve(16);
     fileNames.reserve(16);
 
+    std::ifstream* ifstream;
+
     for (const auto& x : fileLocations)
     {
         for (const auto& y : x)
         {
             if (y.is_directory() == false)
             {
-                fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(new std::ifstream(y.path(), std::ios::binary), std::filesystem::file_size(y.path())));
+                ifstream = new std::ifstream(y.path(), std::ios::binary);
+                fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(ifstream, std::filesystem::file_size(y.path())));
                 fileNames.push_back(y.path().filename().string());
             }
         }
@@ -36,11 +39,11 @@ HttpFileContainer::HttpFileContainer()
         }
 
         mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mHash.GetHashValue(&fileNames[i]), fileBuffer));
-        fileStreamsAndSize[i].first->close();
     }
 
     for (auto& x : fileStreamsAndSize)
     {
+        x.first->close();
         delete x.first;
     }
 }

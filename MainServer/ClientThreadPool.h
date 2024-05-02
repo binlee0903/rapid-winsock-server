@@ -23,7 +23,7 @@ public:
 	void Signal(THREAD_EVENT threadEvent);
 	void Init();
 
-	bool IsQueueEmpty() const;
+	bool IsThreadsRunning() const;
 
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
@@ -35,6 +35,7 @@ private:
 	static ClientThreadPool* mInstance;
 
 	std::queue<ClientWork*> mClientWorks;
+	bool* mThreadsRunningState;
 
 	HANDLE* mThreads;
 	uint16_t mThreadCount;

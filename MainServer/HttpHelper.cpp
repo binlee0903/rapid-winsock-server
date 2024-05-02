@@ -8,6 +8,11 @@ HttpHelper::HttpHelper()
 {
 }
 
+HttpHelper::~HttpHelper()
+{
+	delete mRouter;
+}
+
 HttpHelper* HttpHelper::GetHttpHelper()
 {
 	if (mInstance == nullptr)

@@ -57,6 +57,11 @@ void HttpRouter::createFileRequestResponse(HttpObject* httpObject, std::vector<i
 
 HttpRouter::~HttpRouter()
 {
+	for (auto& x : mServices)
+	{
+		delete x.second;
+	}
+
 	delete mHttpFileContainer;
 	delete mSQLiteConnector;
 }

@@ -15,8 +15,6 @@ HttpsServer* HttpsServer::GetServer()
 
 int32_t HttpsServer::Run()
 {
-	SET_CRT_DEBUG_FIELD(_CRTDBG_LEAK_CHECK_DF);
-
 	network::OpenSocket(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, true);
 
 	HANDLE eventHandle = WSACreateEvent();
@@ -91,7 +89,6 @@ int32_t HttpsServer::Run()
 
 			if (ret != 0)
 			{
-				SSL_shutdown(ssl);
 				SSL_free(ssl);
 				CloseHandle(clientEventHandle);
 				closesocket(clientSocket);
@@ -118,10 +115,7 @@ int32_t HttpsServer::Run()
 		ZeroMemory(&netEvents, sizeof(netEvents));
 	}
 
-	WSACloseEvent(eventHandle);
-	mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_CLOSE);
 	delete this;
-	_CrtDumpMemoryLeaks();
 	return 0;
 }
 
@@ -181,7 +175,6 @@ HttpsServer::HttpsServer()
 	mServer = this;
 	mClientSessions.reserve(128);
 
-	SSL_load_error_strings();
 	SSL_library_init();
 	OpenSSL_add_ssl_algorithms();
 
@@ -221,18 +214,36 @@ HttpsServer::HttpsServer()
 
 HttpsServer::~HttpsServer()
 {
-	for (uint32_t i = 0; i < mClientSessions.size(); i++)
+	while (mClientThreadPool->IsThreadsRunning())
 	{
-		delete mClientSessions[i];
+		;
 	}
 
+	ClientWork* clientCloseWork;
+
+	for (uint32_t i = 0; i < mClientSessions.size(); i++)
+	{
+		clientCloseWork = new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE);
+		clientCloseWork->Run(nullptr);
+	}
+
+	mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_CLOSE);
 	delete mClientThreadPool;
 
 	HttpHelper::DeleteHttpHelper();
 
-	SSL_shutdown(mSSL);
-	SSL_free(mSSL);
 	SSL_CTX_free(mSSLCTX);
+
+	CRYPTO_cleanup_all_ex_data();
+	CRYPTO_set_locking_callback(NULL);
+	CRYPTO_set_id_callback(NULL);
+	OPENSSL_cleanup();
+	EVP_cleanup();
+	ERR_free_strings();
+	CONF_modules_unload(1);
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+	CRYPTO_cleanup_all_ex_data();
+	SSL_COMP_free_compression_methods();
 
 	int result = WSACleanup();
 
