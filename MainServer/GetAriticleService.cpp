@@ -20,7 +20,7 @@ GetArticleService* GetArticleService::GetArticleServiceInstance(SQLiteConnector*
 
 uint64_t GetArticleService::GetServiceName() const
 {
-	return mServiceName;
+	return mHashedServiceName;
 }
 
 bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const

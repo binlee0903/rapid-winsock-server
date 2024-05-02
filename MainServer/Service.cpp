@@ -2,8 +2,9 @@
 
 SRWLOCK Service::mSRWLock = { 0 };
 
-Service::Service(const char* serviceName)
+Service::Service(std::string& serviceName)
 	: mHash()
-	, mServiceName(mHash.GetHashValue(serviceName))
+	, mServiceName(serviceName)
+	, mHashedServiceName(mHash.GetHashValue(&mServiceName))
 {
 }

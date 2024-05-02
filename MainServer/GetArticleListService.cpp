@@ -20,7 +20,7 @@ GetArticleListService* GetArticleListService::GetArticleListServiceInstance(SQLi
 
 uint64_t GetArticleListService::GetServiceName() const
 {
-	return mServiceName;
+	return mHashedServiceName;
 }
 
 bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const

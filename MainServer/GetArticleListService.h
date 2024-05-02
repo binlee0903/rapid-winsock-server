@@ -8,7 +8,7 @@
 class GetArticleListService final : public Service
 {
 private:
-	const char* GET_ARTICLE_LIST_SERVICE_NAME = "/getArticleList";
+	std::string GET_ARTICLE_LIST_SERVICE_NAME = "/getArticleList";
 
 public:
 	static GetArticleListService* GetArticleListServiceInstance(SQLiteConnector* sqliteConnector);

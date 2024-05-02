@@ -59,6 +59,6 @@ private:
 
 	HttpFileContainer* mHttpFileContainer;
 	SQLiteConnector* mSQLiteConnector;
-	std::unordered_map<uint64_t, IService*> mServices;
+	std::unordered_map<uint64_t, Service*> mServices;
 	Hash mHash;
 };

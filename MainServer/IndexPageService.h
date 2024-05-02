@@ -6,7 +6,7 @@
 class IndexPageService final : public Service
 {
 private:
-	const char* INDEX_PAGE_SERVICE_NAME = "";
+	std::string INDEX_PAGE_SERVICE_NAME = "";
 
 public:
 	static IndexPageService* GetIndexPageServiceInstance(std::vector<int8_t>* htmlPage);

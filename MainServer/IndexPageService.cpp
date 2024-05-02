@@ -20,7 +20,7 @@ IndexPageService* IndexPageService::GetIndexPageServiceInstance(std::vector<int8
 
 uint64_t IndexPageService::GetServiceName() const
 {
-    return mServiceName;
+    return mHashedServiceName;
 }
 
 bool IndexPageService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const

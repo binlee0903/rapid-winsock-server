@@ -11,7 +11,7 @@
 class Service
 {
 public:
-	Service(const char* serviceName);
+	Service(std::string& serviceName);
 	virtual ~Service() = default;
 
 	virtual uint64_t GetServiceName() const = 0;
@@ -19,7 +19,8 @@ public:
 	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const = 0;
 
 protected:
-	uint64_t mServiceName;
+	std::string mServiceName;
+	uint64_t mHashedServiceName;
 	Hash mHash;
 	static SRWLOCK mSRWLock;
 };

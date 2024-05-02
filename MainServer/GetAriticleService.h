@@ -6,7 +6,7 @@
 class GetArticleService final : public Service
 {
 private:
-	const char* GET_ARTICLE_SERVICE_NAME = "/getArticle";
+	std::string GET_ARTICLE_SERVICE_NAME = "/getArticle";
 public:
 	static GetArticleService* GetArticleServiceInstance(SQLiteConnector* sqliteConnector);
 	~GetArticleService() = default;
