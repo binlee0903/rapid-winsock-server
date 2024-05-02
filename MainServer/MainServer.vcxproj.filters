@@ -119,7 +119,7 @@
     <ClCompile Include="network.cpp">
       <Filter>Source\network</Filter>
     </ClCompile>
-    <ClCompile Include="IService.cpp">
+    <ClCompile Include="Service.cpp">
       <Filter>Source\interfaces</Filter>
     </ClCompile>
     <ClCompile Include="IndexPageService.cpp">
@@ -187,7 +187,7 @@
     <ClInclude Include="network.h">
       <Filter>Header\network</Filter>
     </ClInclude>
-    <ClInclude Include="IService.h">
+    <ClInclude Include="Service.h">
       <Filter>Header\interfaces</Filter>
     </ClInclude>
     <ClInclude Include="IndexPageService.h">

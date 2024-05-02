@@ -1,27 +1,26 @@
 #include "GetAriticleService.h"
 
-GetArticleService* GetArticleService::mGetArticleService = nullptr;
-SRWLOCK GetArticleService::mSRWLock = { 0 };
+GetArticleService* GetArticleService::mInstance = nullptr;
 
 GetArticleService::GetArticleService(SQLiteConnector* sqliteConnector)
+	: Service(GET_ARTICLE_SERVICE_NAME)
 {
-	mServiceName = mHash.GetHashValue(&GET_ARTICLE_SERVICE_NAME);
 	mSQLiteConnector = sqliteConnector;
 }
 
 GetArticleService* GetArticleService::GetArticleServiceInstance(SQLiteConnector* sqliteConnector)
 {
-	if (mGetArticleService == nullptr)
+	if (mInstance == nullptr)
 	{
-		mGetArticleService = new GetArticleService(sqliteConnector);
+		mInstance = new GetArticleService(sqliteConnector);
 	}
 
-	return mGetArticleService;
+	return mInstance;
 }
 
 uint64_t GetArticleService::GetServiceName() const
 {
-	return mServiceName;
+	return mHashedServiceName;
 }
 
 bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const

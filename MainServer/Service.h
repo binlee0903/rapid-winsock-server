@@ -8,18 +8,19 @@
 
 #include "HttpFileContainer.h"
 
-class IService
+class Service
 {
 public:
-	IService() = default;
-	virtual ~IService() = default;
+	Service(std::string& serviceName);
+	virtual ~Service() = default;
 
 	virtual uint64_t GetServiceName() const = 0;
 	
 	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const = 0;
 
 protected:
-	uint64_t mServiceName;
+	std::string mServiceName;
+	uint64_t mHashedServiceName;
 	Hash mHash;
-	SRWLOCK* mSRWLock;
+	static SRWLOCK mSRWLock;
 };

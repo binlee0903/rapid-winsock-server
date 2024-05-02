@@ -1,12 +1,12 @@
 #pragma once
 
-#include "IService.h"
+#include "Service.h"
 #include "SQLiteConnector.h"
 
-const std::string GET_ARTICLE_SERVICE_NAME = "/getArticle";
-
-class GetArticleService final : public IService
+class GetArticleService final : public Service
 {
+private:
+	std::string GET_ARTICLE_SERVICE_NAME = "/getArticle";
 public:
 	static GetArticleService* GetArticleServiceInstance(SQLiteConnector* sqliteConnector);
 	~GetArticleService() = default;
@@ -17,8 +17,7 @@ private:
 	GetArticleService(SQLiteConnector* sqliteConnector);
 
 private:
-	static GetArticleService* mGetArticleService;
-	static SRWLOCK mSRWLock;
+	static GetArticleService* mInstance;
 
 	SQLiteConnector* mSQLiteConnector;
 };
