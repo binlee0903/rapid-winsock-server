@@ -3,7 +3,7 @@
 Welcome! This project represents my blog's front and backend server,
 developed using cpp with winsock2.
 
-Average memory usage: 10MB
+Average memory usage: 5MB
 
 ## How to use
 
@@ -56,4 +56,5 @@ Additionally, make sure to register the service in the constructor of HttpRouter
 
 ```
 
+And If you want to close server properly, Press 'q' to exit.
 
