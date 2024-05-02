@@ -1,12 +1,13 @@
 #pragma once
 
-#include "IService.h"
+#include "Service.h"
 #include "HttpFileContainer.h"
 
-const std::string INDEX_PAGE_SERVICE_NAME = "";
-
-class IndexPageService final : public IService
+class IndexPageService final : public Service
 {
+private:
+	const char* INDEX_PAGE_SERVICE_NAME = "";
+
 public:
 	static IndexPageService* GetIndexPageServiceInstance(std::vector<int8_t>* htmlPage);
 	~IndexPageService() = default;

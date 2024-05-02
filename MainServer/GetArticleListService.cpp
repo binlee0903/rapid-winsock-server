@@ -1,22 +1,21 @@
 #include "GetArticleListService.h"
 
-GetArticleListService* GetArticleListService::mGetArticleListService = nullptr;
-SRWLOCK GetArticleListService::mSRWLock = { 0 };
+GetArticleListService* GetArticleListService::mInstance = nullptr;
 
 GetArticleListService::GetArticleListService(SQLiteConnector* sqliteConnector)
+	: Service(GET_ARTICLE_LIST_SERVICE_NAME)
 {
-	mServiceName = mHash.GetHashValue(&GET_ARTICLE_LIST_SERVICE_NAME);
 	mSQLiteConnector = sqliteConnector;
 }
 
 GetArticleListService* GetArticleListService::GetArticleListServiceInstance(SQLiteConnector* sqliteConnector)
 {
-	if (mGetArticleListService == nullptr)
+	if (mInstance == nullptr)
 	{
-		mGetArticleListService = new GetArticleListService(sqliteConnector);
+		mInstance = new GetArticleListService(sqliteConnector);
 	}
 
-	return mGetArticleListService;
+	return mInstance;
 }
 
 uint64_t GetArticleListService::GetServiceName() const

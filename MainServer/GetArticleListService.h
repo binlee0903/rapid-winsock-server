@@ -2,13 +2,14 @@
 
 #include <iostream>
 
-#include "IService.h"
+#include "Service.h"
 #include "SQLiteConnector.h"
 
-const std::string GET_ARTICLE_LIST_SERVICE_NAME = "/getArticleList";
-
-class GetArticleListService final : public IService
+class GetArticleListService final : public Service
 {
+private:
+	const char* GET_ARTICLE_LIST_SERVICE_NAME = "/getArticleList";
+
 public:
 	static GetArticleListService* GetArticleListServiceInstance(SQLiteConnector* sqliteConnector);
 	~GetArticleListService() = default;
@@ -19,7 +20,6 @@ private:
 	GetArticleListService(SQLiteConnector* sqliteConnector);
 
 private:
-	static GetArticleListService* mGetArticleListService;
-	static SRWLOCK mSRWLock;
+	static GetArticleListService* mInstance;
 	SQLiteConnector* mSQLiteConnector;
 };

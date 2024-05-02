@@ -3,8 +3,8 @@
 IndexPageService* IndexPageService::mIndexPageService = nullptr;
 
 IndexPageService::IndexPageService(std::vector<int8_t>* htmlPage)
+	: Service(INDEX_PAGE_SERVICE_NAME)
 {
-	mServiceName = mHash.GetHashValue(&INDEX_PAGE_SERVICE_NAME);
 	mHtmlPage = htmlPage;
 }
 
