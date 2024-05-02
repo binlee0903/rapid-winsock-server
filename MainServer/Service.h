@@ -8,11 +8,11 @@
 
 #include "HttpFileContainer.h"
 
-class IService
+class Service
 {
 public:
-	IService() = default;
-	virtual ~IService() = default;
+	Service(const char* serviceName);
+	virtual ~Service() = default;
 
 	virtual uint64_t GetServiceName() const = 0;
 	
@@ -21,5 +21,5 @@ public:
 protected:
 	uint64_t mServiceName;
 	Hash mHash;
-	SRWLOCK* mSRWLock;
+	static SRWLOCK mSRWLock;
 };

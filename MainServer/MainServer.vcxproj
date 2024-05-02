@@ -180,7 +180,7 @@
     <ClCompile Include="HttpServer.cpp" />
     <ClCompile Include="IndexPageService.cpp" />
     <ClCompile Include="IServer.cpp" />
-    <ClCompile Include="IService.cpp" />
+    <ClCompile Include="Service.cpp" />
     <ClCompile Include="ClientWork.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="main.cpp" />
@@ -207,7 +207,7 @@
     <ClInclude Include="HttpsServer.h" />
     <ClInclude Include="IndexPageService.h" />
     <ClInclude Include="IServer.h" />
-    <ClInclude Include="IService.h" />
+    <ClInclude Include="Service.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="network.h" />
     <ClInclude Include="SQLiteConnector.h" />
