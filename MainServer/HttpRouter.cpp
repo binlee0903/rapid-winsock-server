@@ -100,6 +100,7 @@ void HttpRouter::executeService(HttpObject* httpObject, std::vector<int8_t>& res
 	if (!isHasServiceRequestAndAvailable(serviceNameHash))
 	{
 		http::Create404Response(httpObject, mHttpFileContainer, response);
+		return;
 	}
 
 	auto* serviceOutput = new std::vector<int8_t>();
@@ -109,7 +110,11 @@ void HttpRouter::executeService(HttpObject* httpObject, std::vector<int8_t>& res
 	{
 		if (serviceNameHash == x.first)
 		{
-			x.second->Run(httpObject, *serviceOutput);
+			if (!x.second->Run(httpObject, *serviceOutput))
+			{
+				http::Create404Response(httpObject, mHttpFileContainer, response);
+				return;
+			}
 		}
 	}
 
