@@ -28,10 +28,11 @@ public:
 
 private:
 	sqlite3* mDataBase;
-	sqlite3_stmt* mDBStateMentSelect;
-	sqlite3_stmt* mDBStateMentGetArticles;
-	sqlite3_stmt* mDBStateMentInsert;
-	sqlite3_stmt* mDBStateMentUpdate;
-	sqlite3_stmt* mDBStateMentDelete;
+	sqlite3_stmt* mDBStatementSelect;
+	sqlite3_stmt* mDBStatementSelectExists;
+	sqlite3_stmt* mDBStatementGetArticles;
+	sqlite3_stmt* mDBStatementInsert;
+	sqlite3_stmt* mDBStatementUpdate;
+	sqlite3_stmt* mDBStatementDelete;
 };
 
