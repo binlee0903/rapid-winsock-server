@@ -123,6 +123,7 @@ void ClientWork::finishWork() const
 void ClientWork::closeConnection()
 {
 	delete mClientSession->ip;
+	delete mClientSession->sessionTimer;
 	SSL_shutdown(mClientSession->clientSSLConnection);
 	WSACloseEvent(mClientSession->eventHandle);
 	SSL_free(mClientSession->clientSSLConnection);

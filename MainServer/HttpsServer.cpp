@@ -31,6 +31,7 @@ int32_t HttpsServer::Run()
 	tempClientSession->clientSocket = mHttpsSocket;
 	tempClientSession->eventHandle = eventHandle;
 	tempClientSession->clientSSLConnection = mSSL;
+	tempClientSession->sessionTimer = nullptr;
 	tempClientSession->ip = nullptr;
 	mClientSessions.push_back(tempClientSession);
 	mClientEventHandles.push_back(eventHandle);
@@ -50,10 +51,11 @@ int32_t HttpsServer::Run()
 
 	while (!mbIsQuitButtonPressed)
 	{
-		index = WSAWaitForMultipleEvents(mClientEventHandles.size(), mClientEventHandles.data(), false, 500, false);
+		index = WSAWaitForMultipleEvents(mClientEventHandles.size(), mClientEventHandles.data(), false, 1000, false);
 
-		if (index == WSA_WAIT_FAILED || index == WSA_WAIT_TIMEOUT)
+		if (index == WSA_WAIT_TIMEOUT)
 		{
+			invalidateSession();
 			continue;
 		}
 
@@ -84,6 +86,7 @@ int32_t HttpsServer::Run()
 			tempClientSession->clientSocket = clientSocket;
 			tempClientSession->eventHandle = clientEventHandle;
 			tempClientSession->clientSSLConnection = ssl;
+			tempClientSession->sessionTimer = new SessionTimer();
 			tempClientSession->ip = new std::string(buffer);
 			ret = ProcessSSLHandshake(tempClientSession);
 
@@ -101,6 +104,7 @@ int32_t HttpsServer::Run()
 			break;
 
 		case FD_READ:
+			mClientSessions[index]->sessionTimer->ResetTimer();
 			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_READ));
 			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
 			break;
@@ -240,7 +244,6 @@ HttpsServer::~HttpsServer()
 	OPENSSL_cleanup();
 	EVP_cleanup();
 	ERR_free_strings();
-	CONF_modules_unload(1);
 	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
 	CRYPTO_cleanup_all_ex_data();
 	SSL_COMP_free_compression_methods();
@@ -261,6 +264,21 @@ void HttpsServer::printSocketError()
 		std::cout << msg << std::endl;
 	}
 	LocalFree(msg);
+}
+
+void HttpsServer::invalidateSession()
+{
+	for (uint32_t i = 1; i < mClientSessions.size(); i++)
+	{
+		mClientSessions[i]->sessionTimer->SetCurrentTime();
+		
+		if (mClientSessions[i]->sessionTimer->IsSessionInvalidated())
+		{
+			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE));
+			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
+			eraseClient(i);
+		}
+	}
 }
 
 void HttpsServer::eraseClient(uint32_t index)
