@@ -72,6 +72,7 @@ private:
 	~HttpsServer();
 
 	void printSocketError();
+	void invalidateSession();
 	void eraseClient(uint32_t index);
 private:
 	static HttpsServer* mServer;

@@ -75,6 +75,12 @@
     <Filter Include="Source\threadPool">
       <UniqueIdentifier>{8fe7e11a-3b62-4084-ad90-e88c347cb07b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\timer">
+      <UniqueIdentifier>{18dcaf1e-3c1f-4219-afd0-5425af4725e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\timer">
+      <UniqueIdentifier>{c66c5b82-d603-4498-ae8e-ad048bbe3930}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -139,6 +145,12 @@
     </ClCompile>
     <ClCompile Include="ClientSession.h">
       <Filter>Header\https</Filter>
+    </ClCompile>
+    <ClCompile Include="SessionTimer.h">
+      <Filter>Header\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="SessionTimer.cpp">
+      <Filter>Source\timer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
