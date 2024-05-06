@@ -42,6 +42,9 @@ public:
 	HttpVersion GetHttpVersion();
 	void SetHttpVersion(std::string& httpVersion);
 
+	std::unordered_map<std::string, std::string>& GetHttpArguments();
+	void SetHttpArguments(std::unordered_map<std::string, std::string>&& httpArguments);
+
 	std::unordered_map<std::string, std::string>& GetHttpHeaders();
 	void InsertHttpHeader(std::string& key, std::string& value);
 
@@ -51,5 +54,6 @@ private:
 	std::string mContentType;
 	HttpVersion mHttpVersion;
 	std::unordered_map<std::string, std::string> mHttpHeaders;
+	std::unordered_map<std::string, std::string> mHttpURLArguments;
 };
 

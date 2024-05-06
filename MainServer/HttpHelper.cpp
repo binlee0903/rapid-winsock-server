@@ -35,8 +35,10 @@ void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>&
 
 bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) const
 {
-	constexpr char BASIC_DELIM = L' ';
-	constexpr char METHOD_DELIM = L':';
+	constexpr char BASIC_DELIM = ' ';
+	constexpr char METHOD_DELIM = ':';
+	constexpr char URL_ARGUMENT_INSIDE_DELIM = '=';
+	constexpr char URL_ARGUMENT_DELIM = '&';
 	constexpr uint16_t BUFFER_BASIC_SIZE = 32;
 
 	std::istringstream is{ buffer };
@@ -58,9 +60,12 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	{
 		return false;
 	}
+
 	size_t offset = firstBuffer.rfind(L'/') + 1;
 	firstBuffer = firstBuffer.substr(offset);
 	size_t rearOffset = firstBuffer.rfind('?');
+	secondBuffer = firstBuffer.substr(rearOffset + 1);
+
 	if (rearOffset != std::string::npos)
 	{
 		firstBuffer = firstBuffer.substr(0, rearOffset);
@@ -90,6 +95,27 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	{
 		httpObject->SetHttpContentType("application/json");
 	}
+
+	std::unordered_map<std::string, std::string> httpURLArguments;
+	size_t argumentStartOffset = 0;
+	size_t argumentEndOffset = 0;
+
+	for (size_t i = 0; i < secondBuffer.size(); i++)
+	{
+		if (secondBuffer[i] == URL_ARGUMENT_INSIDE_DELIM)
+		{
+			argumentEndOffset = secondBuffer.find(URL_ARGUMENT_DELIM, i);
+
+			httpURLArguments.insert({ secondBuffer.substr(argumentStartOffset, i - argumentStartOffset), secondBuffer.substr(i + 1, argumentEndOffset - (i + 1)) });
+
+			if (argumentEndOffset != std::string::npos)
+			{
+				argumentStartOffset = argumentEndOffset + 1;
+			}
+		}
+	}
+
+	httpObject->SetHttpArguments(std::move(httpURLArguments));
 
 	std::getline(is, firstBuffer);
 	if (is.fail() == true)
