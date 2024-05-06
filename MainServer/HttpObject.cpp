@@ -81,6 +81,16 @@ void HttpObject::SetHttpVersion(std::string& httpVersion)
 	}
 }
 
+std::unordered_map<std::string, std::string>& HttpObject::GetHttpArguments()
+{
+	return mHttpURLArguments;
+}
+
+void HttpObject::SetHttpArguments(std::unordered_map<std::string, std::string>&& httpArguments)
+{
+	mHttpURLArguments = std::move(httpArguments);
+}
+
 std::unordered_map<std::string, std::string>& HttpObject::GetHttpHeaders()
 {
 	return mHttpHeaders;

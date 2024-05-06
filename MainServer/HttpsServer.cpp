@@ -53,6 +53,12 @@ int32_t HttpsServer::Run()
 	{
 		index = WSAWaitForMultipleEvents(mClientEventHandles.size(), mClientEventHandles.data(), false, 1000, false);
 
+		if (index == WSA_WAIT_FAILED)
+		{
+			printSocketError();
+			continue;
+		}
+
 		if (index == WSA_WAIT_TIMEOUT)
 		{
 			invalidateSession();
@@ -70,7 +76,7 @@ int32_t HttpsServer::Run()
 
 			if (clientSocket == NULL)
 			{
-				std::cout << "Run() : clientSocket was NULL" << std::endl;
+				mLogger->error("Run() : clientSocket was NULL");
 				break;
 			}
 
@@ -89,6 +95,8 @@ int32_t HttpsServer::Run()
 			tempClientSession->sessionTimer = new SessionTimer();
 			tempClientSession->ip = new std::string(buffer);
 			ret = ProcessSSLHandshake(tempClientSession);
+
+			mLogger->info("Run() : client connected, ip : {}", tempClientSession->ip->c_str());
 
 			if (ret != 0)
 			{
@@ -110,6 +118,7 @@ int32_t HttpsServer::Run()
 			break;
 
 		case FD_CLOSE:
+			mLogger->info("Run() : client disconnected, ip : {}", mClientSessions[index]->ip->c_str());
 			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_CLOSE));
 			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
 			eraseClient(index);
@@ -144,9 +153,8 @@ int HttpsServer::ProcessSSLHandshake(ClientSession* clientSession)
 		}
 		else if (errorCode != SSL_ERROR_NONE)
 		{
-			std::cout << "ssl accept failed, error Code : " << errorCode << std::endl;
 			ERR_error_string_n(ERR_get_error(), buffer, 512);
-			std::cout << buffer << std::endl;
+			mLogger->error("ProcessSSLHandshake() : ssl accept failed, error message : {}", buffer);
 			return -1;
 		}
 	}
@@ -175,6 +183,7 @@ HttpsServer::HttpsServer()
 	, mClientThreadPool(ClientThreadPool::GetInstance())
 	, mHttpsSocket(NULL)
 	, mClientSessions()
+	, mLogger(spdlog::rotating_logger_mt("HttpsServer", "./logs/daily.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES))
 {
 	mServer = this;
 	mClientSessions.reserve(128);
