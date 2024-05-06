@@ -20,6 +20,8 @@
 #include <process.h>
 #include <synchapi.h>
 
+#include <spdlog/sinks/rotating_file_sink.h>
+
 #include "ClientThreadPool.h"
 #include "HttpRouter.h"
 
@@ -36,6 +38,8 @@ constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
+constexpr uint32_t MAX_LOGGER_SIZE = 1048576 * 5; // 5MB
+constexpr uint32_t MAX_LOGGER_FILES = 5;
 
 #ifdef   _DEBUG
 #define  SET_CRT_DEBUG_FIELD(a) \
@@ -88,5 +92,7 @@ private:
 
 	std::vector<ClientSession*> mClientSessions;
 	std::vector<HANDLE> mClientEventHandles;
+
+	std::shared_ptr<spdlog::logger> mLogger;
 };
 
