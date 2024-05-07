@@ -21,10 +21,27 @@ ClientWork::~ClientWork()
 
 ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 {
+	STATUS status = STATUS::HTTPS_CLIENT_OK;
+
 	switch (mClientSessionType)
 	{
 		case ClientSessionType::SESSION_READ:
-			ProcessRequest();
+			status = ProcessRequest();
+
+			switch (status)
+			{
+			case ClientWork::HTTPS_CLIENT_OK:
+				break;
+			case ClientWork::HTTPS_CLIENT_ERROR:
+				break;
+			case ClientWork::HTTPS_CLIENT_NO_AVAILABLE_DATA:
+				break;
+			case ClientWork::HTTPS_CLIENT_INVALID_HTTP_HEADER:
+				break;
+			default:
+				break;
+			}
+
 			mClientSession->processingCount -= 1;
 			break;
 
@@ -48,7 +65,7 @@ bool ClientWork::IsProcessing() const
 	return mClientSession->processingCount > 0;
 }
 
-int8_t ClientWork::ProcessRequest()
+ClientWork::STATUS ClientWork::ProcessRequest()
 {
 	std::string buffer;
 	buffer.reserve(BUFFER_SIZE * 2);
@@ -68,7 +85,7 @@ int8_t ClientWork::ProcessRequest()
 	return writeHttpResponse();
 }
 
-int8_t ClientWork::writeHttpResponse()
+ClientWork::STATUS ClientWork::writeHttpResponse()
 {
 	std::vector<int8_t> response;
 	response.reserve(BUFFER_SIZE);
