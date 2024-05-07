@@ -63,12 +63,12 @@ public:
 	 *  return HTTPS_CLIENT_ERROR when get error,
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
-	int8_t ProcessRequest();
+	ClientWork::STATUS ProcessRequest();
 private:
 	void closeConnection();
 	void finishWork() const;
 
-	int8_t writeHttpResponse();
+	STATUS writeHttpResponse();
 	uint64_t receiveData(std::string* content);
 
 private:

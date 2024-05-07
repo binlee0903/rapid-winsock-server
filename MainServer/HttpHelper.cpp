@@ -61,7 +61,18 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 		return false;
 	}
 
-	size_t offset = firstBuffer.rfind(L'/') + 1;
+	size_t offset = firstBuffer.rfind(L'/');
+
+	if (offset == std::string::npos)
+	{
+		return false;
+	}
+	else
+	{
+		offset += 1;
+	
+	}
+
 	firstBuffer = firstBuffer.substr(offset);
 	size_t rearOffset = firstBuffer.rfind('?');
 	secondBuffer = firstBuffer.substr(rearOffset + 1);
