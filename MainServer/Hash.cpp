@@ -1,8 +1,14 @@
 #include "Hash.h"
 
-std::hash<std::string> Hash::mHasher;
-
 uint64_t Hash::GetHashValue(const std::string* value)
 {
-	return mHasher(*value);
+	uint32_t hashValue = 5381;
+	const char* s = value->data();
+
+	while (*s)
+	{
+		hashValue = ((hashValue << 5) + hashValue) + *s++;
+	}
+
+	return hashValue;
 }
