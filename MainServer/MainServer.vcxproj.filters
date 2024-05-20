@@ -81,6 +81,12 @@
     <Filter Include="Source\timer">
       <UniqueIdentifier>{c66c5b82-d603-4498-ae8e-ad048bbe3930}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\string">
+      <UniqueIdentifier>{28520a01-3536-4344-9d59-d7bd1af46776}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\string">
+      <UniqueIdentifier>{88e23f3b-2578-4160-ad1b-5e188ec2c41e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -152,6 +158,9 @@
     <ClCompile Include="SessionTimer.cpp">
       <Filter>Source\timer</Filter>
     </ClCompile>
+    <ClCompile Include="String.cpp">
+      <Filter>Source\string</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h">
@@ -222,6 +231,9 @@
     </ClInclude>
     <ClInclude Include="ClientSessionType.h">
       <Filter>Header\https</Filter>
+    </ClInclude>
+    <ClInclude Include="String.h">
+      <Filter>Header\string</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

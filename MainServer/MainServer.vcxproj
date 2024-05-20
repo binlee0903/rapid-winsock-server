@@ -190,6 +190,7 @@
     <ClCompile Include="ClientThreadPool.cpp" />
     <ClCompile Include="SessionTimer.cpp" />
     <ClCompile Include="SessionTimer.h" />
+    <ClCompile Include="String.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArticleObject.h" />
@@ -215,6 +216,7 @@
     <ClInclude Include="SQLiteConnector.h" />
     <ClInclude Include="SQLiteSQLStatements.h" />
     <ClInclude Include="ClientThreadPool.h" />
+    <ClInclude Include="String.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\resource\json\services.json" />

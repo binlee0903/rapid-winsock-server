@@ -1,5 +1,8 @@
 #include <chrono>
 
+#ifndef SESSION_TIMER_GUARD
+#define SESSION_TIMER_GUARD
+
 class SessionTimer
 {
 private:
@@ -20,3 +23,5 @@ private:
 	std::chrono::system_clock::time_point mStartTime;
 	std::chrono::system_clock::time_point mCurrentTime;
 };
+
+#endif
