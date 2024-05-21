@@ -39,9 +39,7 @@ bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& service
 
 	int ret = 0;
 
-	AcquireSRWLockExclusive(&mSRWLock);
 	ret = mSQLiteConnector->GetArticle(ArticleNumber, article);
-	ReleaseSRWLockExclusive(&mSRWLock);
 
 	if (ret == -1)
 	{
