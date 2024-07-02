@@ -27,7 +27,7 @@ bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& service
 {
 	Json::Value article;
 
-	std::stringstream pageIndexStringStream { httpObject->GetHttpHeaders().at("Article-Number") };
+	std::stringstream pageIndexStringStream { httpObject->GetHttpHeaders()->at("Article-Number") };
 	int ArticleNumber = -1;
 
 	pageIndexStringStream >> ArticleNumber;

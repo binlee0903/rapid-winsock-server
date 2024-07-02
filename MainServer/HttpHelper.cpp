@@ -107,7 +107,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 		httpObject->SetHttpContentType("application/json");
 	}
 
-	std::unordered_map<std::string, std::string> httpURLArguments;
+	std::unordered_map<std::string, std::string>* httpURLArguments = new std::unordered_map<std::string, std::string>();
 	size_t argumentStartOffset = 0;
 	size_t argumentEndOffset = 0;
 
@@ -117,7 +117,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 		{
 			argumentEndOffset = secondBuffer.find(URL_ARGUMENT_DELIM, i);
 
-			httpURLArguments.insert({ secondBuffer.substr(argumentStartOffset, i - argumentStartOffset), secondBuffer.substr(i + 1, argumentEndOffset - (i + 1)) });
+			httpURLArguments->insert({ secondBuffer.substr(argumentStartOffset, i - argumentStartOffset), secondBuffer.substr(i + 1, argumentEndOffset - (i + 1)) });
 
 			if (argumentEndOffset != std::string::npos)
 			{
@@ -126,7 +126,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 		}
 	}
 
-	httpObject->SetHttpArguments(std::move(httpURLArguments));
+	httpObject->SetHttpArguments(httpURLArguments);
 
 	std::getline(is, firstBuffer);
 	if (is.fail() == true)
@@ -136,7 +136,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	httpObject->SetHttpVersion(firstBuffer);
 	is.ignore(LLONG_MAX, '\n');
 
-	auto& httpHeaders = httpObject->GetHttpHeaders();
+	auto* httpHeaders = httpObject->GetHttpHeaders();
 
 	// read http key values
 	while (is.eof() != true)
@@ -158,7 +158,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 			is.ignore();
 			std::getline(is, secondBuffer);
 			size_t offset = secondBuffer.find('\r');
-			httpHeaders.insert({ firstBuffer, secondBuffer.substr(0, offset) });
+			httpHeaders->insert({ firstBuffer, secondBuffer.substr(0, offset) });
 		}
 	}
 

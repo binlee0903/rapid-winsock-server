@@ -100,6 +100,7 @@ int32_t HttpsServer::Run()
 
 			if (ret != 0)
 			{
+				//assert(false);
 				SSL_free(ssl);
 				CloseHandle(clientEventHandle);
 				closesocket(clientSocket);

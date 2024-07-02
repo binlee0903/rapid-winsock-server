@@ -24,7 +24,7 @@ public:
 
 public:
 	HttpObject();
-	~HttpObject() = default;
+	~HttpObject();
 
 	// delete for safe
 	HttpObject(const HttpObject & rhs) = delete;
@@ -42,10 +42,10 @@ public:
 	HttpVersion GetHttpVersion();
 	void SetHttpVersion(std::string& httpVersion);
 
-	std::unordered_map<std::string, std::string>& GetHttpArguments();
-	void SetHttpArguments(std::unordered_map<std::string, std::string>&& httpArguments);
+	std::unordered_map<std::string, std::string>* GetHttpArguments();
+	void SetHttpArguments(std::unordered_map<std::string, std::string>* httpArguments);
 
-	std::unordered_map<std::string, std::string>& GetHttpHeaders();
+	std::unordered_map<std::string, std::string>* GetHttpHeaders();
 	void InsertHttpHeader(std::string& key, std::string& value);
 
 private:
@@ -53,7 +53,7 @@ private:
 	std::string mDest;
 	std::string mContentType;
 	HttpVersion mHttpVersion;
-	std::unordered_map<std::string, std::string> mHttpHeaders;
-	std::unordered_map<std::string, std::string> mHttpURLArguments;
+	std::unordered_map<std::string, std::string>* mHttpHeaders;
+	std::unordered_map<std::string, std::string>* mHttpURLArguments;
 };
 

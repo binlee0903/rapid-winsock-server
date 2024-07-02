@@ -130,9 +130,9 @@ void http::GetServiceNameFromDest(HttpObject* httpObject, std::string& output)
 
 bool http::IsKeepAlive(HttpObject* httpObject)
 {
-	auto connection = httpObject->GetHttpHeaders().find("Connection");
+	auto connection = httpObject->GetHttpHeaders()->find("Connection");
 
-	if (connection == httpObject->GetHttpHeaders().end())
+	if (connection == httpObject->GetHttpHeaders()->end())
 	{
 		return false;
 	}
