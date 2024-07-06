@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "http.h"
 
 void http::AppendStringToVector(const char* str, size_t size, std::vector<int8_t>& v)

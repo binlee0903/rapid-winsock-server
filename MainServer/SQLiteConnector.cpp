@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "SQLiteConnector.h"
 
 SQLiteConnector::SQLiteConnector()

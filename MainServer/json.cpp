@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "json.h"
 
 void json::AppendJsonObject(const char* key, const char* value, Json::Value& jsonObject)

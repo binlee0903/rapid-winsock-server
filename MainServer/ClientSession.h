@@ -1,7 +1,12 @@
-#include "network.h"
-#include "ClientSessionType.h"
-#include "SessionTimer.h"
+#pragma once
 
+#include <WinSock2.h>
+#include <cstdint>
+#include <string>
+
+#include <openssl/ssl.h>
+
+#include "SessionTimer.h"
 using socket_t = decltype(socket(0, 0, 0));
 
 struct ClientSession
@@ -13,4 +18,6 @@ struct ClientSession
 	SSL* clientSSLConnection;
 	SessionTimer* sessionTimer;
 	std::string* ip;
+	bool bIsSSLConnected;
+	bool bIsSSLRetryConnection;
 };

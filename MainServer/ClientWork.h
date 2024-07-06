@@ -1,26 +1,12 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <cstdint>
-#include <assert.h>
-#include <queue>
-
-#include <WinSock2.h>
-#include <ws2tcpip.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
-#include "HttpHelper.h"
-#include "ClientSession.h"
-
-using socket_t = decltype(socket(0, 0, 0));
-
 constexpr uint32_t BASIC_SSL_CHUNK_SIZE = 16384;
 constexpr uint32_t BUFFER_SIZE = 512;
 constexpr uint32_t MAX_REQUEST_SIZE = 1000;
 constexpr uint32_t KEEP_ALIVE_TIME = 5;
+
+#include "ClientSessionType.h"
+#include "ClientSession.h"
 
 class ClientWork final
 {

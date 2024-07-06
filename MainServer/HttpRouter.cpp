@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "HttpRouter.h"
 
 HttpRouter* HttpRouter::mRouter = nullptr;

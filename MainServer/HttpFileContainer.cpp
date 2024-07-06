@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "HttpFileContainer.h"
 
 HttpFileContainer::HttpFileContainer()

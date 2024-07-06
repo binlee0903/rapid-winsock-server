@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "IndexPageService.h"
 
 IndexPageService* IndexPageService::mIndexPageService = nullptr;

@@ -1,4 +1,5 @@
-﻿#include "ClientThreadPool.h"
+﻿#include "stdafx.h"
+#include "ClientThreadPool.h"
 
 ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 

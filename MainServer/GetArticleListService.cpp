@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "GetArticleListService.h"
 
 GetArticleListService* GetArticleListService::mInstance = nullptr;

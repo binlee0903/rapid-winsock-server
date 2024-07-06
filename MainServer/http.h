@@ -1,12 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <cassert>
-#include <vector>
-#include <sstream>
-
-#include "HttpFileContainer.h"
-
 namespace http
 {
 	const char HTTP_501_MESSAGE[] = "HTTP/1.0 501 Not Implemented\r\n";

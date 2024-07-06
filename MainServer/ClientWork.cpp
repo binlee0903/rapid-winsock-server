@@ -1,4 +1,5 @@
-﻿#include "ClientWork.h"
+﻿#include "stdafx.h"
+#include "ClientWork.h"
 
 SRWLOCK ClientWork::mSRWLock = { 0 };
 

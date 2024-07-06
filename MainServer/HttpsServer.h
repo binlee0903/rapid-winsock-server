@@ -9,36 +9,17 @@
 
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-
-#include <Windows.h>
-#include <iostream>
-#include <conio.h>
-
-#include <vector>
-#include <unordered_set>
-#include <process.h>
-#include <synchapi.h>
-
-#include <spdlog/sinks/rotating_file_sink.h>
-
 #include "ClientThreadPool.h"
-#include "HttpRouter.h"
 
-#ifdef _DEBUG
-	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb35\\Documents\\server-cert\\server.crt";
-	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb35\\Documents\\server-cert\\server.key";
-#else
-	constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.crt.pem";
-	constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
-#endif
+constexpr char SERVER_CERT_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.crt.pem";
+constexpr char SERVER_KEY_FILE[] = "C:\\Users\\Administrator\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
 
 constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
-constexpr uint32_t MAX_LOGGER_SIZE = 1048576 * 5; // 5MB
+constexpr uint32_t MAX_LOGGER_SIZE = 1048576; // 1MB
 constexpr uint32_t MAX_LOGGER_FILES = 5;
 
 #ifdef   _DEBUG

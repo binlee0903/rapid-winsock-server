@@ -1,16 +1,6 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 
-#include <fstream>
-#include <sstream>
-#include <cassert>
-#include <iostream>
-
-#include "HttpRouter.h"
-#include "HttpFileContainer.h"
-#include "SQLiteConnector.h"
-#include "JSON.h"
-
 class HttpHelper final
 {
 public:

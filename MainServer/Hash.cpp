@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "Hash.h"
 
 uint64_t Hash::GetHashValue(const std::string* value)

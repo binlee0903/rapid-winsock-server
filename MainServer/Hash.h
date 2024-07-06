@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <string>
-
 class Hash final
 {
 public:

@@ -1,10 +1,5 @@
 #pragma once
 
-#include <iostream>
-
-#include "Service.h"
-#include "SQLiteConnector.h"
-
 class GetArticleListService final : public Service
 {
 private:
