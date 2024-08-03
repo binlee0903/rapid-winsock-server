@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "Service.h"
 
 SRWLOCK Service::mSRWLock = { 0 };

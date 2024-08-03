@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Service.h"
-#include "SQLiteConnector.h"
-
 class GetArticleService final : public Service
 {
 private:

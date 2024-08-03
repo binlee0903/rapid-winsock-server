@@ -10,6 +10,8 @@
 
 #include "network.h"
 
+LONG CALLBACK CrashHandlerThatCreateDumpFileCallBack(EXCEPTION_POINTERS* exception);
+
 class HttpServer final
 {
 public:

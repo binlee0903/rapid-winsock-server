@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "HttpsServer.h"
 
 HttpsServer* HttpsServer::mServer = nullptr;
@@ -33,6 +34,8 @@ int32_t HttpsServer::Run()
 	tempClientSession->clientSSLConnection = mSSL;
 	tempClientSession->sessionTimer = nullptr;
 	tempClientSession->ip = nullptr;
+	tempClientSession->bIsSSLRetryConnection = false;
+	tempClientSession->bIsSSLConnected = false;
 	mClientSessions.push_back(tempClientSession);
 	mClientEventHandles.push_back(eventHandle);
 	tempClientSession = nullptr;
@@ -94,27 +97,58 @@ int32_t HttpsServer::Run()
 			tempClientSession->clientSSLConnection = ssl;
 			tempClientSession->sessionTimer = new SessionTimer();
 			tempClientSession->ip = new std::string(buffer);
-			ret = ProcessSSLHandshake(tempClientSession);
-
+			tempClientSession->bIsSSLRetryConnection = false;
+			tempClientSession->bIsSSLConnected = false;
 			mLogger->info("Run() : client connected, ip : {}", tempClientSession->ip->c_str());
-
-			if (ret != 0)
-			{
-				SSL_free(ssl);
-				CloseHandle(clientEventHandle);
-				closesocket(clientSocket);
-				delete tempClientSession;
-				continue;
-			}
 
 			mClientSessions.push_back(tempClientSession);
 			mClientEventHandles.push_back(clientEventHandle);
+			tempClientSession = nullptr;
 			break;
 
 		case FD_READ:
 			mClientSessions[index]->sessionTimer->ResetTimer();
-			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_READ));
-			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
+
+			if (mClientSessions[index]->bIsSSLConnected == false)
+			{
+				if (mClientSessions[index]->bIsSSLRetryConnection == true)
+				{
+					mLogger->info("Run() : retry ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
+				}
+				else
+				{
+					mLogger->info("Run() : attampt ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
+				}
+
+				ret = ProcessSSLHandshake(mClientSessions[index]);
+
+				if (ret == SSL_ERROR_WANT_READ)
+				{
+					mClientSessions[index]->bIsSSLRetryConnection = true;
+					break;
+				}
+
+				if (ret != SSL_ERROR_NONE)
+				{
+					mLogger->info("Run() : failed ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
+					SSL_free(mClientSessions[index]->clientSSLConnection);
+					CloseHandle(mClientSessions[index]->eventHandle);
+					closesocket(mClientSessions[index]->clientSocket);
+					delete mClientSessions[index]->sessionTimer;
+					delete mClientSessions[index]->ip;
+					delete mClientSessions[index];
+					mClientSessions[index] = nullptr;
+					eraseClient(index);
+					break;;
+				}
+
+				mClientSessions[index]->bIsSSLConnected = true;
+			}
+			else
+			{
+				mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_READ));
+				mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
+			}
 			break;
 
 		case FD_CLOSE:
@@ -138,9 +172,11 @@ int HttpsServer::ProcessSSLHandshake(ClientSession* clientSession)
 
 	int retCode = 0;
 	int errorCode = 0;
+	uint32_t retryCount = 0;
 	char buffer[512];
 	ZeroMemory(buffer, 512);
 
+	// infinite
 	while (retCode <= 0)
 	{
 		ERR_clear_error();
@@ -149,7 +185,7 @@ int HttpsServer::ProcessSSLHandshake(ClientSession* clientSession)
 
 		if (errorCode == SSL_ERROR_WANT_READ)
 		{
-			continue;
+			return SSL_ERROR_WANT_READ;
 		}
 		else if (errorCode != SSL_ERROR_NONE)
 		{
@@ -211,7 +247,6 @@ HttpsServer::HttpsServer()
 	SSL_CTX_set_mode(mSSLCTX, SSL_MODE_ENABLE_PARTIAL_WRITE);
 
 	mSSL = SSL_new(mSSLCTX);
-	SSL_set_mode(mSSL, SSL_MODE_AUTO_RETRY);
 
 	WSADATA wsaData;
 	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -280,7 +315,7 @@ void HttpsServer::invalidateSession()
 	for (uint32_t i = 1; i < mClientSessions.size(); i++)
 	{
 		mClientSessions[i]->sessionTimer->SetCurrentTime();
-		
+
 		if (mClientSessions[i]->sessionTimer->IsSessionInvalidated())
 		{
 			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE));

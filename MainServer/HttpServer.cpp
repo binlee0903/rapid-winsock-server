@@ -1,9 +1,11 @@
+#include "stdafx.h"
 #include "HttpServer.h"
 
 network::socket_t HttpServer::mHttpSocket = NULL;
 
 int32_t HttpServer::Run()
 {
+	SetUnhandledExceptionFilter(CrashHandlerThatCreateDumpFileCallBack);
     network::OpenSocket(mHttpSocket, network::HTTP_PORT_NUMBER, nullptr, false);
 
 	reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, redirectToHttps, nullptr, 0, nullptr));

@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "network.h"
 
 network::socket_t network::ProcessAccept(network::socket_t socket, sockaddr_in sockaddrIn, std::string& address)

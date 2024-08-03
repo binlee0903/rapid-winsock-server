@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Header\base64">
-      <UniqueIdentifier>{edfc1911-4eb7-4058-b12e-ba150e91bad5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header\interfaces">
       <UniqueIdentifier>{1ed5a88b-4128-4a79-8b19-0129a4f813be}</UniqueIdentifier>
     </Filter>
@@ -23,9 +20,6 @@
     </Filter>
     <Filter Include="Source\interfaces">
       <UniqueIdentifier>{4d7dcb26-dbaa-41d7-85fd-1a9d11c2191e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source\base64">
-      <UniqueIdentifier>{b0ec2f9f-75ec-49b1-b416-280ceb31949b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\https">
       <UniqueIdentifier>{a80007dc-82cb-4bc9-99e2-88811b634d57}</UniqueIdentifier>
@@ -81,6 +75,9 @@
     <Filter Include="Source\timer">
       <UniqueIdentifier>{c66c5b82-d603-4498-ae8e-ad048bbe3930}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\debugging">
+      <UniqueIdentifier>{c99ddaff-b236-4a9b-add5-819fbfb56076}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -94,12 +91,6 @@
     </ClCompile>
     <ClCompile Include="HttpRouter.cpp">
       <Filter>Source\http</Filter>
-    </ClCompile>
-    <ClCompile Include="IServer.cpp">
-      <Filter>Source\interfaces</Filter>
-    </ClCompile>
-    <ClCompile Include="base64.cpp">
-      <Filter>Source\base64</Filter>
     </ClCompile>
     <ClCompile Include="HttpFileContainer.cpp">
       <Filter>Source\http</Filter>
@@ -143,26 +134,23 @@
     <ClCompile Include="ClientThreadPool.cpp">
       <Filter>Source\threadPool</Filter>
     </ClCompile>
-    <ClCompile Include="ClientSession.h">
-      <Filter>Header\https</Filter>
-    </ClCompile>
-    <ClCompile Include="SessionTimer.h">
-      <Filter>Header\timer</Filter>
-    </ClCompile>
     <ClCompile Include="SessionTimer.cpp">
       <Filter>Source\timer</Filter>
     </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugHelper.cpp">
+      <Filter>Source\debugging</Filter>
+    </ClCompile>
+    <ClCompile Include="ArticleObject.cpp">
+      <Filter>Source\service</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientSession.cpp">
+      <Filter>Source\https</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ArticleObject.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="IServer.h">
-      <Filter>Header\interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="base64.h">
-      <Filter>Header\base64</Filter>
-    </ClInclude>
     <ClInclude Include="HttpFileContainer.h">
       <Filter>Header\http</Filter>
     </ClInclude>
@@ -221,6 +209,18 @@
       <Filter>Header\threadPool</Filter>
     </ClInclude>
     <ClInclude Include="ClientSessionType.h">
+      <Filter>Header\https</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ArticleObject.h">
+      <Filter>Header\service</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionTimer.h">
+      <Filter>Header\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSession.h">
       <Filter>Header\https</Filter>
     </ClInclude>
   </ItemGroup>

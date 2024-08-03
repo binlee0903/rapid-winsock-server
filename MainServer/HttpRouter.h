@@ -7,20 +7,6 @@
  *********************************************************************/
 
 #pragma once
-
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <filesystem>
-#include <vector>
-#include <unordered_map>
-
-#include <json/json.h>
-
-#include "HttpObject.h"
-#include "HttpFileContainer.h"
-#include "http.h"
-
 #pragma region IncludeServices
 
 #include "IndexPageService.h"
@@ -29,11 +15,7 @@
 
 #pragma endregion
 
-#ifdef _DEBUG
-	constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\json\\services.json";
-#else
-	constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\json\\services.json";
-#endif
+constexpr char DEFAULT_JSON_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\json\\services.json";
 
 class HttpRouter final
 {

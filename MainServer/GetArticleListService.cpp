@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "GetArticleListService.h"
 
 GetArticleListService* GetArticleListService::mInstance = nullptr;
@@ -28,14 +29,14 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 	Json::Value articles;
 	int pageIndex = -1;
 
-	auto& headers = httpObject->GetHttpHeaders();
+	auto* headers = httpObject->GetHttpHeaders();
 
-	if (headers.find("Page-Index") == headers.end())
+	if (headers->find("Page-Index") == headers->end())
 	{
 		return false;
 	}
 
-	std::stringstream pageIndexStringStream { headers.at("Page-Index") };
+	std::stringstream pageIndexStringStream { headers->at("Page-Index") };
 
 	pageIndexStringStream >> pageIndex;
 
@@ -44,9 +45,7 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 		return false;
 	}
 
-	AcquireSRWLockExclusive(&mSRWLock);
 	mSQLiteConnector->GetArticles(pageIndex, articles);
-	ReleaseSRWLockExclusive(&mSRWLock);
 
 	std::stringstream ss;
 	ss << articles;

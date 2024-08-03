@@ -1,8 +1,17 @@
+#include "stdafx.h"
 #include "HttpObject.h"
 
 HttpObject::HttpObject()
 	: mHttpVersion(Http_UNKNOWN)
+	, mHttpHeaders(new std::unordered_map<std::string, std::string>())
+	, mHttpURLArguments(nullptr)
 {
+}
+
+HttpObject::~HttpObject()
+{
+	delete mHttpHeaders;
+	delete mHttpURLArguments;
 }
 
 std::string& HttpObject::GetHttpMethod()
@@ -81,22 +90,22 @@ void HttpObject::SetHttpVersion(std::string& httpVersion)
 	}
 }
 
-std::unordered_map<std::string, std::string>& HttpObject::GetHttpArguments()
+std::unordered_map<std::string, std::string>* HttpObject::GetHttpArguments()
 {
 	return mHttpURLArguments;
 }
 
-void HttpObject::SetHttpArguments(std::unordered_map<std::string, std::string>&& httpArguments)
+void HttpObject::SetHttpArguments(std::unordered_map<std::string, std::string>* httpArguments)
 {
-	mHttpURLArguments = std::move(httpArguments);
+	mHttpURLArguments = httpArguments;
 }
 
-std::unordered_map<std::string, std::string>& HttpObject::GetHttpHeaders()
+std::unordered_map<std::string, std::string>* HttpObject::GetHttpHeaders()
 {
 	return mHttpHeaders;
 }
 
 void HttpObject::InsertHttpHeader(std::string& key, std::string& value)
 {
-	mHttpHeaders.insert({key, value});
+	mHttpHeaders->insert({key, value});
 }

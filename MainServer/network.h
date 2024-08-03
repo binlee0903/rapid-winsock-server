@@ -1,16 +1,5 @@
 #pragma once
 
-#include <WinSock2.h>
-#include <ws2tcpip.h>
-
-#include <openssl/ssl3.h>
-#include <openssl/err.h>
-
-#include <cstdint>
-#include <cassert>
-#include <string>
-#include <sstream>
-
 namespace network
 {
 	using socket_t = decltype(socket(0, 0, 0));
