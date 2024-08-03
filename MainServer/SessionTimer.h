@@ -1,8 +1,5 @@
 #pragma once
 
-#include <chrono>
-#include <cstdint>
-
 #ifndef SESSION_TIMER_GUARD
 #define SESSION_TIMER_GUARD
 

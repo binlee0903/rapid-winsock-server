@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "SessionTimer.h"
 
 SessionTimer::SessionTimer()
