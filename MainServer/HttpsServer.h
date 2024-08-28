@@ -63,7 +63,10 @@ private:
 
 	void printSocketError();
 	void invalidateSession();
+	void signalForRemainingWorks();
 	void eraseClient(uint32_t index);
+
+	ClientSession* createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip);
 private:
 	static HttpsServer* mServer;
 

@@ -2,7 +2,8 @@
 
 #include "ClientWork.h"
 
-constexpr uint16_t THREAD_COUNT = 1;
+constexpr uint32_t THREAD_COUNT = 2;
+constexpr uint32_t EVENT_COUNT = 2;
 
 class ClientThreadPool final
 {
@@ -24,6 +25,7 @@ public:
 	void Init();
 
 	bool IsThreadsRunning() const;
+	bool IsWorkQueueEmpty() const;
 
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
@@ -35,10 +37,9 @@ private:
 	static ClientThreadPool* mInstance;
 
 	std::queue<ClientWork*> mClientWorks;
-	bool* mThreadsRunningState;
+	uint32_t mThreadRunningCount;
 
 	HANDLE* mThreads;
-	uint16_t mThreadCount;
-	std::vector<HANDLE> mEventHandles;
+	HANDLE* mEventHandles;
 	SRWLOCK* mSRWLock;
 };
