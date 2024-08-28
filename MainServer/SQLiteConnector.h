@@ -2,7 +2,11 @@
 
 #include "SQLiteSQLStatements.h"
 
+#ifdef _DEBUG
+constexpr char SQLITE_DB_LOCATION[] = "C:\\Users\\egb35\\Documents\\database\\blog.db";
+#else
 constexpr char SQLITE_DB_LOCATION[] = "C:\\Users\\Administrator\\Documents\\sqlite_db_file\\blog.db";
+#endif
 
 class SQLiteConnector final
 {
