@@ -18,7 +18,7 @@ int YourAllocHook(int allocType, void* userData, size_t size,
 int32_t main()
 {
 	SET_CRT_DEBUG_FIELD(_CRTDBG_LEAK_CHECK_DF);
-	_CrtSetAllocHook(YourAllocHook);
+	//_CrtSetAllocHook(YourAllocHook);
 	SetUnhandledExceptionFilter(CrashHandlerThatCreateDumpFileCallBack);
 	HttpsServer* server = HttpsServer::GetServer();
 	HttpServer::Run();

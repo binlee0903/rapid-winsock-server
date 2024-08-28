@@ -10,10 +10,17 @@
 
 #pragma once
 
+#ifdef _DEBUG
+constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\html";
+constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\css";
+constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\images";
+constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\js";
+#else
 constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\html";
 constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\assets\\css";
 constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\assets\\images";
 constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\Administrator\\Documents\\resource\\assets\\js";
+#endif
 
 class HttpFileContainer final
 {

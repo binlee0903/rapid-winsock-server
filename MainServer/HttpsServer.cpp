@@ -26,22 +26,15 @@ int32_t HttpsServer::Run()
 
 	WSAEventSelect(mHttpsSocket, eventHandle, FD_ACCEPT);
 
-	tempClientSession = new ClientSession();
-	tempClientSession->sessionID = mSessionIDSequence++;
-	tempClientSession->processingCount = 0;
-	tempClientSession->clientSocket = mHttpsSocket;
-	tempClientSession->eventHandle = eventHandle;
-	tempClientSession->clientSSLConnection = mSSL;
-	tempClientSession->sessionTimer = nullptr;
-	tempClientSession->ip = nullptr;
-	tempClientSession->bIsSSLRetryConnection = false;
-	tempClientSession->bIsSSLConnected = false;
+	std::string dummy = "dummy";
+	tempClientSession = createClientSession(mHttpsSocket, eventHandle, mSSL, dummy);
 	mClientSessions.push_back(tempClientSession);
 	mClientEventHandles.push_back(eventHandle);
 	tempClientSession = nullptr;
+	eventHandle = nullptr;
 
-	std::string buffer;
-	buffer.reserve(32);
+	std::string ipAddressBuffer;
+	ipAddressBuffer.reserve(32);
 	socket_t clientSocket = NULL;
 	SSL* ssl = nullptr;
 	sockaddr_in clientSockAddr;
@@ -64,6 +57,7 @@ int32_t HttpsServer::Run()
 
 		if (index == WSA_WAIT_TIMEOUT)
 		{
+			signalForRemainingWorks();
 			invalidateSession();
 			continue;
 		}
@@ -75,7 +69,7 @@ int32_t HttpsServer::Run()
 		switch (netEvents.lNetworkEvents)
 		{
 		case FD_ACCEPT:
-			clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, buffer);
+			clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, ipAddressBuffer);
 
 			if (clientSocket == NULL)
 			{
@@ -89,21 +83,13 @@ int32_t HttpsServer::Run()
 			ssl = SSL_new(mSSLCTX);
 			SSL_set_accept_state(ssl);
 
-			tempClientSession = new ClientSession();
-			tempClientSession->sessionID = mSessionIDSequence++;
-			tempClientSession->processingCount = 0;
-			tempClientSession->clientSocket = clientSocket;
-			tempClientSession->eventHandle = clientEventHandle;
-			tempClientSession->clientSSLConnection = ssl;
-			tempClientSession->sessionTimer = new SessionTimer();
-			tempClientSession->ip = new std::string(buffer);
-			tempClientSession->bIsSSLRetryConnection = false;
-			tempClientSession->bIsSSLConnected = false;
+			tempClientSession = createClientSession(clientSocket, clientEventHandle, ssl, ipAddressBuffer);
 			mLogger->info("Run() : client connected, ip : {}", tempClientSession->ip->c_str());
 
 			mClientSessions.push_back(tempClientSession);
 			mClientEventHandles.push_back(clientEventHandle);
 			tempClientSession = nullptr;
+			clientEventHandle = nullptr;
 			break;
 
 		case FD_READ:
@@ -267,12 +253,14 @@ HttpsServer::~HttpsServer()
 		;
 	}
 
+	ClientWork::ERROR_CODE errorCode;
 	ClientWork* clientCloseWork;
 
 	for (uint32_t i = 0; i < mClientSessions.size(); i++)
 	{
 		clientCloseWork = new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE);
-		clientCloseWork->Run(nullptr);
+		errorCode = clientCloseWork->Run(nullptr);
+		assert(errorCode != ClientWork::ERROR_CLOSE_BEFORE_WORK_DONE);
 	}
 
 	mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_CLOSE);
@@ -325,6 +313,14 @@ void HttpsServer::invalidateSession()
 	}
 }
 
+void HttpsServer::signalForRemainingWorks()
+{
+	if (mClientThreadPool->IsWorkQueueEmpty() != true)
+	{
+		mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
+	}
+}
+
 void HttpsServer::eraseClient(uint32_t index)
 {
 	for (uint32_t i = index; i <= mClientSessions.size() - 1; i++)
@@ -339,4 +335,20 @@ void HttpsServer::eraseClient(uint32_t index)
 		mClientSessions[i] = mClientSessions[i + 1];
 		mClientEventHandles[i] = mClientEventHandles[i + 1];
 	}
+}
+
+ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip)
+{
+	ClientSession* clientSession = new ClientSession();
+	clientSession->sessionID = mSessionIDSequence++;
+	clientSession->processingCount = 0;
+	clientSession->clientSocket = clientSocket;
+	clientSession->eventHandle = clientEventHandle;
+	clientSession->clientSSLConnection = clientSSL;
+	clientSession->sessionTimer = new SessionTimer();
+	clientSession->ip = new std::string(ip);
+	clientSession->bIsSSLRetryConnection = false;
+	clientSession->bIsSSLConnected = false;
+
+	return clientSession;
 }

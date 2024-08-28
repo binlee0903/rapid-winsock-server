@@ -5,45 +5,40 @@ ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 
 ClientThreadPool::ClientThreadPool()
 	: mThreads(new HANDLE[THREAD_COUNT])
-	, mThreadCount(THREAD_COUNT)
-	, mEventHandles()
+	, mEventHandles(new HANDLE[EVENT_COUNT])
 	, mSRWLock(new SRWLOCK())
-	, mThreadsRunningState(new bool[THREAD_COUNT])
+	, mThreadRunningCount(0)
 {
-	mEventHandles.reserve(THREAD_COUNT);
 }
 
 ClientThreadPool::~ClientThreadPool()
 {
-	for (uint16_t i = 0; i < mThreadCount; i++)
+	for (uint16_t i = 0; i < EVENT_COUNT; i++)
 	{
 		CloseHandle(mEventHandles[i]);
+	}
+
+	for (uint16_t i = 0; i < THREAD_COUNT; i++)
+	{
 		WaitForSingleObject(mThreads[i], INFINITE);
 	}
 
 	delete mSRWLock;
+	delete[] mEventHandles;
 	delete[] mThreads;
-	delete[] mThreadsRunningState;
 }
 
 DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 {
-	bool* runningState = reinterpret_cast<bool*>(lpParam);
 	ClientWork::ERROR_CODE error_code;
 	ClientWork* clientWork;
-	uint32_t index = 0;
-	bool isClose = false;
+	uint32_t signalType = 0;
 
-	while (!isClose)
+	while (true)
 	{
-		index = WaitForMultipleObjects(mInstance->mEventHandles.size(), mInstance->mEventHandles.data(), false, 200);
+		signalType = WaitForMultipleObjects(EVENT_COUNT, mInstance->mEventHandles, false, INFINITE);
 
-		if (index == WAIT_TIMEOUT && !mInstance->mClientWorks.empty())
-		{
-			index = 0;
-		}
-
-		switch (index)
+		switch (signalType)
 		{
 		case THREAD_SIGNAL:
 			AcquireSRWLockExclusive(mInstance->mSRWLock);
@@ -55,7 +50,7 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 				continue;
 			}
 
-			*runningState = true;
+			mInstance->mThreadRunningCount += 1;
 			error_code = clientWork->Run(nullptr);
 
 			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
@@ -63,17 +58,22 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 				mInstance->QueueWork(clientWork);
 				mInstance->Signal(THREAD_SIGNAL);
 			}
-
-			*runningState = false;
+			else
+			{
+				clientWork->FinishWork();
+			}
 			// TODO: handle more error
+			mInstance->mThreadRunningCount -= 1;
 			break;
 
 		case THREAD_CLOSE:
-			isClose = true;
-			break;
+			goto end;
 		}
+
+		clientWork = nullptr;
 	}
 
+end:
 	return 0;
 }
 
@@ -84,44 +84,35 @@ void ClientThreadPool::QueueWork(ClientWork* clientWork)
 
 void ClientThreadPool::Signal(THREAD_EVENT threadEvent)
 {
-	if (threadEvent == THREAD_CLOSE)
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		for (uint32_t i = 0; i < THREAD_COUNT; i++)
-		{
-			SetEvent(mEventHandles[threadEvent]);
-		}
-
-		return;
+		SetEvent(mEventHandles[threadEvent]);
 	}
-
-	SetEvent(mEventHandles[threadEvent]);
 }
 
 void ClientThreadPool::Init()
 {
 	InitializeSRWLock(mSRWLock);
 
-	mEventHandles.push_back(CreateEvent(nullptr, false, false, nullptr));
-	mEventHandles.push_back(CreateEvent(nullptr, false, false, nullptr));
-
-	for (uint16_t i = 0; i < mThreadCount; i++)
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		mThreads[i] = CreateThread(nullptr, NULL, &ClientThreadPool::Run, mThreadsRunningState + i, NULL, nullptr);
-		mThreadsRunningState[i] = false;
+		mEventHandles[i] = CreateEvent(nullptr, false, false, nullptr);
+	}
+
+	for (uint16_t i = 0; i < THREAD_COUNT; i++)
+	{
+		mThreads[i] = CreateThread(nullptr, NULL, &ClientThreadPool::Run, nullptr, NULL, nullptr);
 	}
 }
 
 bool ClientThreadPool::IsThreadsRunning() const
 {
-	for (uint16_t i = 0; i < mThreadCount; i++)
-	{
-		if (mInstance->mThreadsRunningState[i] == true)
-		{
-			return true;
-		}
-	}
+	return mThreadRunningCount > 0;
+}
 
-	return false;
+bool ClientThreadPool::IsWorkQueueEmpty() const
+{
+	return mClientWorks.empty();
 }
 
 ClientThreadPool* ClientThreadPool::GetInstance()
