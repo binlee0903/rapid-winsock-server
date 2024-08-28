@@ -20,6 +20,11 @@ ClientWork::~ClientWork()
 	delete mHttpObject;
 }
 
+void ClientWork::FinishWork() const
+{
+	delete this;
+}
+
 ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 {
 	STATUS status = STATUS::HTTPS_CLIENT_OK;
@@ -55,8 +60,6 @@ ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 			closeConnection();
 			break;
 	}
-
-	finishWork();
 
 	return ERROR_NONE;
 }
@@ -131,11 +134,6 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 	}
 
 	return HTTPS_CLIENT_OK;
-}
-
-void ClientWork::finishWork() const
-{
-	delete this;
 }
 
 void ClientWork::closeConnection()

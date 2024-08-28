@@ -32,6 +32,7 @@ public:
 	ClientWork(const ClientWork& rhs) = delete;
 	ClientWork& operator=(ClientWork& rhs) = delete;
 
+	void FinishWork() const;
 	/**
 	 * when client is accepted, this function will run
 	 *
@@ -52,7 +53,6 @@ public:
 	ClientWork::STATUS ProcessRequest();
 private:
 	void closeConnection();
-	void finishWork() const;
 
 	STATUS writeHttpResponse();
 	uint64_t receiveData(std::string* content);

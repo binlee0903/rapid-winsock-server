@@ -57,6 +57,7 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 			*runningState = true;
 			error_code = clientWork->Run(nullptr);
+			clientWork->FinishWork();
 
 			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
 			{
