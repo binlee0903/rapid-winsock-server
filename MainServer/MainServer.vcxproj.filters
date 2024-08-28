@@ -134,26 +134,20 @@
     <ClCompile Include="ClientThreadPool.cpp">
       <Filter>Source\threadPool</Filter>
     </ClCompile>
-    <ClCompile Include="ClientSession.h">
-      <Filter>Header\https</Filter>
-    </ClCompile>
-    <ClCompile Include="SessionTimer.h">
-      <Filter>Header\timer</Filter>
-    </ClCompile>
     <ClCompile Include="SessionTimer.cpp">
       <Filter>Source\timer</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="ClientSession.cpp">
-      <Filter>Source\https</Filter>
-    </ClCompile>
     <ClCompile Include="DebugHelper.cpp">
       <Filter>Source\debugging</Filter>
     </ClCompile>
     <ClCompile Include="ArticleObject.cpp">
       <Filter>Source\service</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientSession.cpp">
+      <Filter>Source\https</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -222,6 +216,12 @@
     </ClInclude>
     <ClInclude Include="ArticleObject.h">
       <Filter>Header\service</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionTimer.h">
+      <Filter>Header\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientSession.h">
+      <Filter>Header\https</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

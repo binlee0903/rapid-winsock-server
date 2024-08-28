@@ -6,7 +6,6 @@
 
 #include <openssl/ssl.h>
 
-#include "SessionTimer.h"
 using socket_t = decltype(socket(0, 0, 0));
 
 struct ClientSession

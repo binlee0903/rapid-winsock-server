@@ -36,6 +36,8 @@
 #include "DebugHelper.h"
 #include "Hash.h"
 #include "HttpObject.h"
+#include "SessionTimer.h"
+#include "ClientSession.h"
 #include "Service.h"
 #include "network.h"
 #include "SQLiteConnector.h"
