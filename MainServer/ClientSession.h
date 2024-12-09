@@ -19,4 +19,5 @@ struct ClientSession
 	std::string* ip;
 	bool bIsSSLConnected;
 	bool bIsSSLRetryConnection;
+	bool bIsDisconnected;
 };

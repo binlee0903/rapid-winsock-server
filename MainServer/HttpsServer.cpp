@@ -266,8 +266,6 @@ HttpsServer::~HttpsServer()
 	mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_CLOSE);
 	delete mClientThreadPool;
 
-	HttpHelper::DeleteHttpHelper();
-
 	SSL_CTX_free(mSSLCTX);
 
 	CRYPTO_cleanup_all_ex_data();
@@ -349,6 +347,7 @@ ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE cl
 	clientSession->ip = new std::string(ip);
 	clientSession->bIsSSLRetryConnection = false;
 	clientSession->bIsSSLConnected = false;
+	clientSession->bIsDisconnected = false;
 
 	return clientSession;
 }

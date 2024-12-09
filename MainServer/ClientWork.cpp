@@ -4,10 +4,9 @@
 SRWLOCK ClientWork::mSRWLock = { 0 };
 
 ClientWork::ClientWork(ClientSession* clientSession, ClientSessionType sessionType)
-	: mHttpHelper(HttpHelper::GetHttpHelper())
-	, mHttpObject(new HttpObject())
-	, mClientSession(clientSession)
-	, mClientSessionType(sessionType)
+: mHttpObject(new HttpObject())
+, mClientSession(clientSession)
+, mClientSessionType(sessionType)
 {
 	if (sessionType == ClientSessionType::SESSION_READ)
 	{
@@ -81,7 +80,7 @@ ClientWork::STATUS ClientWork::ProcessRequest()
 		return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 	}
 
-	if (!mHttpHelper->PrepareResponse(mHttpObject, buffer))
+	if (httpHelper::PrepareResponse(mHttpObject, buffer) == false)
 	{
 		return HTTPS_CLIENT_INVALID_HTTP_HEADER;
 	}
@@ -89,12 +88,17 @@ ClientWork::STATUS ClientWork::ProcessRequest()
 	return writeHttpResponse();
 }
 
+bool ClientWork::IsNull()
+{
+	return mHttpObject == nullptr;
+}
+
 ClientWork::STATUS ClientWork::writeHttpResponse()
 {
 	std::vector<int8_t> response;
 	response.reserve(BUFFER_SIZE);
 
-	mHttpHelper->CreateHttpResponse(mHttpObject, response);
+	httpHelper::CreateHttpResponse(mHttpObject, response);
 
 	int32_t sslErrorCode = 0;
 	size_t responseSize = response.size();
@@ -138,11 +142,14 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 void ClientWork::closeConnection()
 {
+	assert(mClientSession->processingCount == 0);
+	mClientSession->bIsDisconnected = true;
 	delete mClientSession->ip;
 	delete mClientSession->sessionTimer;
 	SSL_shutdown(mClientSession->clientSSLConnection);
 	WSACloseEvent(mClientSession->eventHandle);
 	SSL_free(mClientSession->clientSSLConnection);
+	shutdown(mClientSession->clientSocket, SD_BOTH);
 	closesocket(mClientSession->clientSocket);
 	delete mClientSession;
 }

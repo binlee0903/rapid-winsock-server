@@ -149,6 +149,9 @@
     <ClCompile Include="ClientSession.cpp">
       <Filter>Source\https</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadSafeQueue.cpp">
+      <Filter>Source\threadPool</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpFileContainer.h">
@@ -222,6 +225,9 @@
     </ClInclude>
     <ClInclude Include="ClientSession.h">
       <Filter>Header\https</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadSafeQueue.h">
+      <Filter>Header\threadPool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

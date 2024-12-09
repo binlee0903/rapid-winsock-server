@@ -1,8 +1,9 @@
 #pragma once
 
 #include "ClientWork.h"
+#include "ThreadSafeQueue.h"
 
-constexpr uint32_t THREAD_COUNT = 2;
+constexpr uint32_t THREAD_COUNT = 4;
 constexpr uint32_t EVENT_COUNT = 2;
 
 class ClientThreadPool final
@@ -36,7 +37,7 @@ private:
 private:
 	static ClientThreadPool* mInstance;
 
-	std::queue<ClientWork*> mClientWorks;
+	ThreadSafeQueue<ClientWork*> mClientWorks;
 	uint32_t mThreadRunningCount;
 
 	HANDLE* mThreads;

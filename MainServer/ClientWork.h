@@ -51,6 +51,8 @@ public:
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
 	ClientWork::STATUS ProcessRequest();
+
+	bool IsNull();
 private:
 	void closeConnection();
 
@@ -60,7 +62,6 @@ private:
 private:
 	static SRWLOCK mSRWLock;
 
-	HttpHelper* mHttpHelper;
 	HttpObject* mHttpObject;
 
 	ClientSession* mClientSession;
