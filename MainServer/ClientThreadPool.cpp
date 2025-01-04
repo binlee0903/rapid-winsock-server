@@ -83,7 +83,7 @@ end:
 
 void ClientThreadPool::QueueWork(ClientWork* clientWork)
 {
-	mClientWorks.push(clientWork);
+	mClientWorks.Push(clientWork);
 }
 
 void ClientThreadPool::Signal(THREAD_EVENT threadEvent)
@@ -116,7 +116,7 @@ bool ClientThreadPool::IsThreadsRunning() const
 
 bool ClientThreadPool::IsWorkQueueEmpty() const
 {
-	return mClientWorks.empty();
+	return mClientWorks.IsQueueEmpty();
 }
 
 ClientThreadPool* ClientThreadPool::GetInstance()
@@ -131,12 +131,7 @@ ClientThreadPool* ClientThreadPool::GetInstance()
 
 ClientWork* ClientThreadPool::GetClientWork()
 {
-	if (mInstance->mClientWorks.empty())
-	{
-		return nullptr;
-	}
-
-	ClientWork* clientWork = mInstance->mClientWorks.pop();
+	ClientWork* clientWork = mInstance->mClientWorks.Pop();
 
 	return clientWork;
 }
