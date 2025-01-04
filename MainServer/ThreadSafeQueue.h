@@ -6,28 +6,55 @@
 #include <condition_variable>
 
 template <typename T>
-class ThreadSafeQueue {
-private:
-    std::queue<T> queue;
-    std::mutex mtx;
-    std::condition_variable cv;
-
+class ThreadSafeQueue
+{
 public:
-    void push(T value) {
-        std::unique_lock<std::mutex> lock(mtx);
-        queue.push(value);
-        cv.notify_one();
+    ThreadSafeQueue() 
+    {
+        mSRWLock = new SRWLOCK();
+        InitializeSRWLock(mSRWLock);
     }
 
-    T pop() {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this] { return !queue.empty(); });
+    ~ThreadSafeQueue()
+    {
+        delete mSRWLock;
+    }
+
+    void Push(T value) 
+    {
+        AcquireSRWLockExclusive(mSRWLock);
+        queue.push(value);
+        ReleaseSRWLockExclusive(mSRWLock);
+    }
+
+    T Pop() 
+    {
+        AcquireSRWLockExclusive(mSRWLock);
+
+        if (queue.empty() == true)
+        {
+            ReleaseSRWLockExclusive(mSRWLock);
+            return nullptr;
+        }
+
         T value = queue.front();
         queue.pop();
+        ReleaseSRWLockExclusive(mSRWLock);
         return value;
     }
 
-    bool empty() const {
-        return queue.empty();
+    bool IsQueueEmpty() const 
+    {
+        bool bisQueueEmpty = false;
+
+        AcquireSRWLockExclusive(mSRWLock);
+        bisQueueEmpty = queue.empty();
+        ReleaseSRWLockExclusive(mSRWLock);
+        
+        return bisQueueEmpty;
     }
+
+private:
+    std::queue<T> queue;
+    SRWLOCK* mSRWLock;
 };
