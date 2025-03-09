@@ -8,9 +8,8 @@ constexpr uint32_t KEEP_ALIVE_TIME = 5;
 #include "ClientSessionType.h"
 #include "ClientSession.h"
 
-class ClientWork final
+namespace ClientWork
 {
-public:
 	enum ERROR_CODE
 	{
 		ERROR_NONE,
@@ -25,45 +24,26 @@ public:
 		HTTPS_CLIENT_INVALID_HTTP_HEADER
 	};
 
-	ClientWork(ClientSession* clientSession, ClientSessionType sessionType);
-	~ClientWork();
+	bool IsProcessing(ClientSession* session);
 
-	// delete copy constructor and operator for safe
-	ClientWork(const ClientWork& rhs) = delete;
-	ClientWork& operator=(ClientWork& rhs) = delete;
-
-	void FinishWork() const;
-	/**
-	 * when client is accepted, this function will run
-	 *
-	 * @param client pointer to client
-	 */
-	ERROR_CODE Run(void* clientArg);
-
-	bool IsProcessing() const;
+	int ProcessSSLHandshake(ClientSession* clientSession);
 
 	/**
 	 * process https requests.
 	 * but if ssl is not established, do ssl handshake and read bytes
 	 *
+	 * @param httpObject parsed http request information
+	 * 
 	 * @return HTTPS_CLIENT_OK when success,
 	 *  return HTTPS_CLIENT_ERROR when get error,
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
-	ClientWork::STATUS ProcessRequest();
+	ClientWork::STATUS ProcessRequest(ClientSession* session);
 
-	bool IsNull();
-private:
-	void closeConnection();
+	bool IsNull(ClientSession* session);
 
-	STATUS writeHttpResponse();
-	uint64_t receiveData(std::string* content);
+	void CloseConnection(ClientSession* session);
 
-private:
-	static SRWLOCK mSRWLock;
-
-	HttpObject* mHttpObject;
-
-	ClientSession* mClientSession;
-	ClientSessionType mClientSessionType;
+	STATUS WriteHttpResponse(ClientSession* session);
+	uint64_t ReceiveData(ClientSession* session, std::string* content);
 };

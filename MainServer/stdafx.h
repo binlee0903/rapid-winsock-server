@@ -31,6 +31,7 @@
 #include <sqlite3.h>
 
 #include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
 
 #include "json.h"
 #include "DebugHelper.h"

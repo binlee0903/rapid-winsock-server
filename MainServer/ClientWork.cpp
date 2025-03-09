@@ -1,104 +1,83 @@
 ﻿#include "stdafx.h"
 #include "ClientWork.h"
 
-SRWLOCK ClientWork::mSRWLock = { 0 };
-
-ClientWork::ClientWork(ClientSession* clientSession, ClientSessionType sessionType)
-: mHttpObject(new HttpObject())
-, mClientSession(clientSession)
-, mClientSessionType(sessionType)
+bool ClientWork::IsProcessing(ClientSession* session)
 {
-	if (sessionType == ClientSessionType::SESSION_READ)
+	return session->processingCount > 0;
+}
+
+int ClientWork::ProcessSSLHandshake(ClientSession* clientSession)
+{
+	SSL_set_fd(clientSession->clientSSLConnection, static_cast<int>(clientSession->clientSocket));
+
+	int retCode = 0;
+	int errorCode = 0;
+	uint32_t retryCount = 0;
+	char buffer[512];
+	ZeroMemory(buffer, 512);
+
+	// infinite
+	while (retCode <= 0)
 	{
-		mClientSession->processingCount += 1;
-	}
-}
+		ERR_clear_error();
+		retCode = SSL_accept(clientSession->clientSSLConnection);
+		errorCode = SSL_get_error(clientSession->clientSSLConnection, retCode);
 
-ClientWork::~ClientWork()
-{	
-	delete mHttpObject;
-}
-
-void ClientWork::FinishWork() const
-{
-	delete this;
-}
-
-ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
-{
-	STATUS status = STATUS::HTTPS_CLIENT_OK;
-
-	switch (mClientSessionType)
-	{
-		case ClientSessionType::SESSION_READ:
-			status = ProcessRequest();
-
-			switch (status)
-			{
-			case ClientWork::HTTPS_CLIENT_OK:
-				break;
-			case ClientWork::HTTPS_CLIENT_ERROR:
-				break;
-			case ClientWork::HTTPS_CLIENT_NO_AVAILABLE_DATA:
-				break;
-			case ClientWork::HTTPS_CLIENT_INVALID_HTTP_HEADER:
-				break;
-			default:
-				break;
-			}
-
-			mClientSession->processingCount -= 1;
-			break;
-
-		case ClientSessionType::SESSION_CLOSE:
-			if (IsProcessing() == true)
-			{
-				return ERROR_CLOSE_BEFORE_WORK_DONE;
-			}
-
-			closeConnection();
-			break;
+		if (errorCode == SSL_ERROR_WANT_READ)
+		{
+			return SSL_ERROR_WANT_READ;
+		}
+		else if (errorCode != SSL_ERROR_NONE)
+		{
+			ERR_error_string_n(ERR_get_error(), buffer, 512);
+			//mLogger->error("ProcessSSLHandshake() : ssl accept failed, error message : {}", buffer);
+			return -1;
+		}
 	}
 
-	return ERROR_NONE;
+	return 0;
 }
 
-bool ClientWork::IsProcessing() const
+ClientWork::STATUS ClientWork::ProcessRequest(ClientSession* session)
 {
-	return mClientSession->processingCount > 0;
-}
+	int ret = 0;
 
-ClientWork::STATUS ClientWork::ProcessRequest()
-{
+	if (session->bIsSSLConnected != true)
+	{
+		ret = ProcessSSLHandshake(session);
+		assert(ret == 0);
+		return STATUS::HTTPS_CLIENT_OK;
+	}
+
 	std::string buffer;
 	buffer.reserve(BUFFER_SIZE * 2);
 
-	uint64_t receivedDataLength = receiveData(&buffer);
+	uint64_t receivedDataLength = ReceiveData(session , &buffer);
 
 	if (receivedDataLength == 0)
 	{
 		return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 	}
 
-	if (httpHelper::PrepareResponse(mHttpObject, buffer) == false)
+	if (httpHelper::PrepareResponse(session->httpObject, buffer) == false)
 	{
 		return HTTPS_CLIENT_INVALID_HTTP_HEADER;
 	}
 
-	return writeHttpResponse();
+	return WriteHttpResponse(session);
 }
 
-bool ClientWork::IsNull()
+bool ClientWork::IsNull(ClientSession* session)
 {
-	return mHttpObject == nullptr;
+	return session->httpObject == nullptr;
 }
 
-ClientWork::STATUS ClientWork::writeHttpResponse()
+ClientWork::STATUS ClientWork::WriteHttpResponse(ClientSession* session)
 {
 	std::vector<int8_t> response;
 	response.reserve(BUFFER_SIZE);
 
-	httpHelper::CreateHttpResponse(mHttpObject, response);
+	httpHelper::CreateHttpResponse(session->httpObject, response);
 
 	int32_t sslErrorCode = 0;
 	size_t responseSize = response.size();
@@ -114,25 +93,16 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 		if (responseSize - wroteSize >= BASIC_SSL_CHUNK_SIZE)
 		{
-			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(session->clientSSLConnection, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
 		}
 		else
 		{
-			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(session->clientSSLConnection, &response[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
 		}
 
-		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
+		sslErrorCode = SSL_get_error(session->clientSSLConnection, sslErrorCode);
 
-		if (sslErrorCode != SSL_ERROR_NONE)
-		{
-			AcquireSRWLockExclusive(&mSRWLock);
-			std::cout << "ssl write failed, error Code : " << sslErrorCode << std::endl;
-			int ret = ERR_get_error();
-			ERR_error_string_n(ret, buffer, 512);
-			std::cout << buffer << std::endl;
-			ReleaseSRWLockExclusive(&mSRWLock);
-			return HTTPS_CLIENT_ERROR;
-		}
+		assert(sslErrorCode != SSL_ERROR_NONE);
 
 		wroteSize += wroteSizeToSSL;
 	}
@@ -140,21 +110,21 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 	return HTTPS_CLIENT_OK;
 }
 
-void ClientWork::closeConnection()
+void ClientWork::CloseConnection(ClientSession* session)
 {
-	assert(mClientSession->processingCount == 0);
-	mClientSession->bIsDisconnected = true;
-	delete mClientSession->ip;
-	delete mClientSession->sessionTimer;
-	SSL_shutdown(mClientSession->clientSSLConnection);
-	WSACloseEvent(mClientSession->eventHandle);
-	SSL_free(mClientSession->clientSSLConnection);
-	shutdown(mClientSession->clientSocket, SD_BOTH);
-	closesocket(mClientSession->clientSocket);
-	delete mClientSession;
+	assert(session->processingCount == 0);
+	session->bIsDisconnected = true;
+	delete session->ip;
+	delete session->sessionTimer;
+	SSL_shutdown(session->clientSSLConnection);
+	WSACloseEvent(session->eventHandle);
+	SSL_free(session->clientSSLConnection);
+	shutdown(session->clientSocket, SD_BOTH);
+	closesocket(session->clientSocket);
+	delete session;
 }
 
-uint64_t ClientWork::receiveData(std::string* content)
+uint64_t ClientWork::ReceiveData(ClientSession* session, std::string* content)
 {
 	uint8_t buffer[BUFFER_SIZE];
 
@@ -163,7 +133,7 @@ uint64_t ClientWork::receiveData(std::string* content)
 	size_t receivedDataLength = 0;
 	uint64_t recvLenSum = 0;
 
-	if (ioctlsocket(mClientSession->clientSocket, FIONREAD, &avaliableDataSize) != 0)
+	if (ioctlsocket(session->clientSocket, FIONREAD, &avaliableDataSize) != 0)
 	{
 		return 0;
 	}
@@ -172,8 +142,8 @@ uint64_t ClientWork::receiveData(std::string* content)
 	{
 		ERR_clear_error();
 		ZeroMemory(buffer, sizeof(buffer));
-		sslErrorCode = SSL_read_ex(mClientSession->clientSSLConnection, buffer, BUFFER_SIZE, &receivedDataLength);
-		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
+		sslErrorCode = SSL_read_ex(session->clientSSLConnection, buffer, BUFFER_SIZE, &receivedDataLength);
+		sslErrorCode = SSL_get_error(session->clientSSLConnection, sslErrorCode);
 
 		if (receivedDataLength != 0)
 		{
@@ -185,7 +155,7 @@ uint64_t ClientWork::receiveData(std::string* content)
 			recvLenSum += receivedDataLength;
 		}
 
-		avaliableDataSize = SSL_pending(mClientSession->clientSSLConnection);
+		avaliableDataSize = SSL_pending(session->clientSSLConnection);
 	} while (avaliableDataSize != 0);
 
 	return recvLenSum;

@@ -23,7 +23,17 @@ int32_t main()
 	HttpsServer* server = HttpsServer::GetServer();
 	HttpServer::Run();
 
-	int ret = server->Run();
+	int ret = 0;
+
+	try {
+		ret = server->Run();
+	}
+	catch (const spdlog::spdlog_ex& ex) {
+		std::cout << "Log init failed: " << ex.what() << std::endl;
+		std::cout << "Waiting..." << std::endl;
+		std::cin >> ret;
+	}
+
 	_CrtDumpMemoryLeaks();
 
 	return ret;

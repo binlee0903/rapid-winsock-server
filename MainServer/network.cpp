@@ -6,7 +6,7 @@ network::socket_t network::ProcessAccept(network::socket_t socket, sockaddr_in s
 	socket_t clientSocket = 0;
 	int* size = new int(sizeof(sockaddr_in));
 
-	clientSocket = accept(socket, reinterpret_cast<sockaddr*>(&sockaddrIn), size);
+	clientSocket = WSAAccept(socket, reinterpret_cast<sockaddr*>(&sockaddrIn), size, NULL, NULL);
 
 	if (clientSocket == INVALID_SOCKET)
 	{
@@ -33,7 +33,34 @@ network::socket_t network::ProcessAccept(network::socket_t socket, sockaddr_in s
 
 void network::OpenSocket(network::socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket)
 {
-	targetSocket = socket(AF_INET, SOCK_STREAM, 0);
+	targetSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	assert(targetSocket != INVALID_SOCKET);
+
+	sockaddr_in serverAddr;
+	ZeroMemory(&serverAddr, sizeof(sockaddr_in));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddr.sin_port = htons(portNumber);
+
+	const DWORD optValue = 1; // true
+	setsockopt(targetSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue));
+
+	if (isbSecureSocket == true)
+	{
+		SSL_set_fd(ssl, static_cast<int>(targetSocket));
+	}
+
+	int32_t returnValue = 0;
+	returnValue = bind(targetSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(sockaddr_in));
+	assert(returnValue != SOCKET_ERROR);
+
+	returnValue = listen(targetSocket, MAX_CLIENT_CONNECTION_COUNT);
+	assert(returnValue != SOCKET_ERROR);
+}
+
+void network::OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket)
+{
+	targetSocket = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	assert(targetSocket != INVALID_SOCKET);
 
 	sockaddr_in serverAddr;

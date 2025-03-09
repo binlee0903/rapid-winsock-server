@@ -14,6 +14,7 @@ struct ClientSession
 	int32_t processingCount;
 	socket_t clientSocket;
 	HANDLE eventHandle;
+	HttpObject* httpObject;
 	SSL* clientSSLConnection;
 	SessionTimer* sessionTimer;
 	std::string* ip;

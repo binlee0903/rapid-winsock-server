@@ -20,7 +20,6 @@ constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb3543\\Documents\\server-cert\\
 #endif
 
 constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
-constexpr uint16_t MAX_SOCKET_BUFFER_SIZE = 8192;
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint16_t TIME_OUT = 3000;
@@ -74,6 +73,7 @@ private:
 	uint32_t mSessionIDSequence;
 
 	socket_t mHttpsSocket;
+	HANDLE mIOCPHandle;
 	
 	ClientThreadPool* mClientThreadPool;
 	SSL* mSSL;

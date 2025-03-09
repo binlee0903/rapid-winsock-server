@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "HttpsServer.h"
 
 HttpsServer* HttpsServer::mServer = nullptr;
@@ -16,13 +16,20 @@ HttpsServer* HttpsServer::GetServer()
 
 int32_t HttpsServer::Run()
 {
-	network::OpenSocket(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, true);
+	network::OpenSocketOverlappedIOMode(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, true);
+	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
 	HANDLE eventHandle = WSACreateEvent();
 	HANDLE clientEventHandle;
 	ClientSession* tempClientSession;
 	WSANETWORKEVENTS netEvents;
 	ZeroMemory(&netEvents, sizeof(netEvents));
+
+	OVERLAPPED overlapped;
+	ZeroMemory(&overlapped, sizeof(OVERLAPPED));
+
+	overlapped.hEvent = eventHandle;
+	assert(overlapped.hEvent != WSA_INVALID_EVENT);
 
 	WSAEventSelect(mHttpsSocket, eventHandle, FD_ACCEPT);
 
@@ -42,56 +49,47 @@ int32_t HttpsServer::Run()
 
 	CreateThread(nullptr, 0, HttpsServer::checkQuitMessage, nullptr, NULL, nullptr);
 
-	int index = 0;
+	DWORD flags = 0;
 	int ret = 0;
 
 	while (!mbIsQuitButtonPressed)
 	{
-		index = WSAWaitForMultipleEvents(mClientEventHandles.size(), mClientEventHandles.data(), false, 1000, false);
-
-		if (index == WSA_WAIT_FAILED)
+		clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, ipAddressBuffer);
+		if (clientSocket == NULL)
 		{
-			printSocketError();
+			mLogger->error("Run() : clientSocket was NULL");
 			continue;
 		}
 
-		if (index == WSA_WAIT_TIMEOUT)
+		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), mIOCPHandle, clientSocket, 0); // TODO 마지막 스레드 수 상수로 지정하기
+
+		ssl = SSL_new(mSSLCTX);
+		SSL_set_accept_state(ssl);
+
+		SOCKETINFO* socketInfo = new SOCKETINFO();
+		ZeroMemory(socketInfo, sizeof(SOCKETINFO));
+		socketInfo->socket = clientSocket;
+		socketInfo->session = createClientSession(clientSocket, clientEventHandle, ssl, ipAddressBuffer);
+		socketInfo->recvbytes = 0;
+		socketInfo->sendbytes = 0;
+		socketInfo->wsabuf.buf = socketInfo->buffer;
+		socketInfo->wsabuf.len = MAX_IOCP_BUFFER_SIZE;
+
+		mLogger->info("Run() : client connected, ip : {}", socketInfo->session->ip->c_str());
+
+		ret = WSARecv(clientSocket, &socketInfo->wsabuf, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
+		
+		if (ret == SOCKET_ERROR)
 		{
-			signalForRemainingWorks();
-			invalidateSession();
-			continue;
+			if (WSAGetLastError() != ERROR_IO_PENDING)
+			{
+				assert(true);
+			}
 		}
-
-		index -= WSA_WAIT_EVENT_0;
-
-		WSAEnumNetworkEvents(mClientSessions[index]->clientSocket, mClientEventHandles[index], &netEvents);
+		continue;
 
 		switch (netEvents.lNetworkEvents)
 		{
-		case FD_ACCEPT:
-			clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, ipAddressBuffer);
-
-			if (clientSocket == NULL)
-			{
-				mLogger->error("Run() : clientSocket was NULL");
-				break;
-			}
-
-			clientEventHandle = WSACreateEvent();
-			WSAEventSelect(clientSocket, clientEventHandle, FD_READ | FD_CLOSE);
-
-			ssl = SSL_new(mSSLCTX);
-			SSL_set_accept_state(ssl);
-
-			tempClientSession = createClientSession(clientSocket, clientEventHandle, ssl, ipAddressBuffer);
-			mLogger->info("Run() : client connected, ip : {}", tempClientSession->ip->c_str());
-
-			mClientSessions.push_back(tempClientSession);
-			mClientEventHandles.push_back(clientEventHandle);
-			tempClientSession = nullptr;
-			clientEventHandle = nullptr;
-			break;
-
 		case FD_READ:
 			mClientSessions[index]->sessionTimer->ResetTimer();
 
@@ -204,8 +202,9 @@ HttpsServer::HttpsServer()
 	, mSessionIDSequence(0)
 	, mClientThreadPool(ClientThreadPool::GetInstance())
 	, mHttpsSocket(NULL)
+	, mIOCPHandle(NULL)
 	, mClientSessions()
-	, mLogger(spdlog::rotating_logger_mt("HttpsServer", "./logs/daily.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES))
+	, mLogger(spdlog::rotating_logger_mt("HttpsServer", "logs/log.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES))
 {
 	mServer = this;
 	mClientSessions.reserve(128);
@@ -243,7 +242,7 @@ HttpsServer::HttpsServer()
 		std::cout << "Socket start up Failed(HttpsServer constructor)" << std::endl;
 	}
 
-	mClientThreadPool->Init();
+	mClientThreadPool->Init(mIOCPHandle);
 }
 
 HttpsServer::~HttpsServer()
@@ -278,6 +277,7 @@ HttpsServer::~HttpsServer()
 	CRYPTO_cleanup_all_ex_data();
 	SSL_COMP_free_compression_methods();
 
+	CloseHandle(mIOCPHandle);
 	int result = WSACleanup();
 
 	assert(result == 0);
