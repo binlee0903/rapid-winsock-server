@@ -10,6 +10,7 @@
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 
+#include <list>
 #include <vector>
 #include <queue>
 #include <unordered_set>
@@ -39,6 +40,8 @@
 #include "HttpObject.h"
 #include "SessionTimer.h"
 #include "ClientSession.h"
+#include "MemoryPool.h"
+#include "SocketInfo.h"
 #include "Service.h"
 #include "network.h"
 #include "SQLiteConnector.h"

@@ -17,13 +17,9 @@ HttpsServer* HttpsServer::GetServer()
 int32_t HttpsServer::Run()
 {
 	network::OpenSocketOverlappedIOMode(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, true);
-	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, THREAD_COUNT);
 
 	HANDLE eventHandle = WSACreateEvent();
-	HANDLE clientEventHandle;
-	ClientSession* tempClientSession;
-	WSANETWORKEVENTS netEvents;
-	ZeroMemory(&netEvents, sizeof(netEvents));
 
 	OVERLAPPED overlapped;
 	ZeroMemory(&overlapped, sizeof(OVERLAPPED));
@@ -31,13 +27,6 @@ int32_t HttpsServer::Run()
 	overlapped.hEvent = eventHandle;
 	assert(overlapped.hEvent != WSA_INVALID_EVENT);
 
-	WSAEventSelect(mHttpsSocket, eventHandle, FD_ACCEPT);
-
-	std::string dummy = "dummy";
-	tempClientSession = createClientSession(mHttpsSocket, eventHandle, mSSL, dummy);
-	mClientSessions.push_back(tempClientSession);
-	mClientEventHandles.push_back(eventHandle);
-	tempClientSession = nullptr;
 	eventHandle = nullptr;
 
 	std::string ipAddressBuffer;
@@ -52,134 +41,74 @@ int32_t HttpsServer::Run()
 	DWORD flags = 0;
 	int ret = 0;
 
+	mClientThreadPool->Init(mIOCPHandle);
+
 	while (!mbIsQuitButtonPressed)
 	{
 		clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, ipAddressBuffer);
 		if (clientSocket == NULL)
 		{
-			mLogger->error("Run() : clientSocket was NULL");
+			//mLogger->error("Run() : clientSocket was NULL");
 			continue;
 		}
 
-		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), mIOCPHandle, clientSocket, 0); // TODO 마지막 스레드 수 상수로 지정하기
-
-		ssl = SSL_new(mSSLCTX);
-		SSL_set_accept_state(ssl);
-
 		SOCKETINFO* socketInfo = new SOCKETINFO();
 		ZeroMemory(socketInfo, sizeof(SOCKETINFO));
+		socketInfo->sendMemoryBlock = GetMemoryBlock();
+		socketInfo->recvMemoryBlock = GetMemoryBlock();
+
+		if (socketInfo->sendMemoryBlock == nullptr || socketInfo->recvMemoryBlock == nullptr)
+		{
+			delete socketInfo;
+			closesocket(mHttpsSocket);
+			continue;
+		}
+
+		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), mIOCPHandle, clientSocket, THREAD_COUNT); // TODO 마지막 스레드 수 상수로 지정하기
+		ssl = SSL_new(mSSLCTX);
+		SSL_set_accept_state(ssl);
 		socketInfo->socket = clientSocket;
-		socketInfo->session = createClientSession(clientSocket, clientEventHandle, ssl, ipAddressBuffer);
+		socketInfo->pendingCount = 0;
+		socketInfo->isbClosed = false;
+		InitializeSRWLock(&socketInfo->srwLock);
+		socketInfo->session = createClientSession(clientSocket, nullptr, ssl, ipAddressBuffer);
 		socketInfo->recvbytes = 0;
 		socketInfo->sendbytes = 0;
-		socketInfo->wsabuf.buf = socketInfo->buffer;
-		socketInfo->wsabuf.len = MAX_IOCP_BUFFER_SIZE;
+		socketInfo->sendPendingBytes = 0;
+		socketInfo->recvBuffer.buf = reinterpret_cast<char*>(socketInfo->recvMemoryBlock->ptr);
+		socketInfo->recvBuffer.len = BLOCK_SIZE;
+		socketInfo->sendBuffer.buf = reinterpret_cast<char*>(socketInfo->sendMemoryBlock->ptr);
+		socketInfo->sendBuffer.len = BLOCK_SIZE;
 
-		mLogger->info("Run() : client connected, ip : {}", socketInfo->session->ip->c_str());
+		//mLogger->info("Run() : client connected, ip : {}", socketInfo->session->ip->c_str());
 
-		ret = WSARecv(clientSocket, &socketInfo->wsabuf, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
-		
+		// SOCKETINFO 구조체의 첫 번째 요소 overlapped를 넘겨줌으로써 나중에 type cast로 나머지 SOCKETINFO 멤버 접속 가능해짐
+		ret = WSARecv(clientSocket, &socketInfo->recvBuffer, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
+		httpHelper::InterLockedIncrement(socketInfo);
+
 		if (ret == SOCKET_ERROR)
 		{
 			if (WSAGetLastError() != ERROR_IO_PENDING)
 			{
-				assert(true);
+				printSocketError();
+				assert(false);
 			}
 		}
 		continue;
-
-		switch (netEvents.lNetworkEvents)
-		{
-		case FD_READ:
-			mClientSessions[index]->sessionTimer->ResetTimer();
-
-			if (mClientSessions[index]->bIsSSLConnected == false)
-			{
-				if (mClientSessions[index]->bIsSSLRetryConnection == true)
-				{
-					mLogger->info("Run() : retry ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-				}
-				else
-				{
-					mLogger->info("Run() : attampt ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-				}
-
-				ret = ProcessSSLHandshake(mClientSessions[index]);
-
-				if (ret == SSL_ERROR_WANT_READ)
-				{
-					mClientSessions[index]->bIsSSLRetryConnection = true;
-					break;
-				}
-
-				if (ret != SSL_ERROR_NONE)
-				{
-					mLogger->info("Run() : failed ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-					SSL_free(mClientSessions[index]->clientSSLConnection);
-					CloseHandle(mClientSessions[index]->eventHandle);
-					closesocket(mClientSessions[index]->clientSocket);
-					delete mClientSessions[index]->sessionTimer;
-					delete mClientSessions[index]->ip;
-					delete mClientSessions[index];
-					mClientSessions[index] = nullptr;
-					eraseClient(index);
-					break;;
-				}
-
-				mClientSessions[index]->bIsSSLConnected = true;
-			}
-			else
-			{
-				mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_READ));
-				mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-			}
-			break;
-
-		case FD_CLOSE:
-			mLogger->info("Run() : client disconnected, ip : {}", mClientSessions[index]->ip->c_str());
-			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_CLOSE));
-			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-			eraseClient(index);
-			break;
-		}
-
-		ZeroMemory(&netEvents, sizeof(netEvents));
 	}
 
 	delete this;
 	return 0;
 }
 
-int HttpsServer::ProcessSSLHandshake(ClientSession* clientSession)
+MemoryBlock* HttpsServer::GetMemoryBlock()
 {
-	SSL_set_fd(clientSession->clientSSLConnection, static_cast<int>(clientSession->clientSocket));
+	return mMemoryPool->Allocate();
+}
 
-	int retCode = 0;
-	int errorCode = 0;
-	uint32_t retryCount = 0;
-	char buffer[512];
-	ZeroMemory(buffer, 512);
-
-	// infinite
-	while (retCode <= 0)
-	{
-		ERR_clear_error();
-		retCode = SSL_accept(clientSession->clientSSLConnection);
-		errorCode = SSL_get_error(clientSession->clientSSLConnection, retCode);
-
-		if (errorCode == SSL_ERROR_WANT_READ)
-		{
-			return SSL_ERROR_WANT_READ;
-		}
-		else if (errorCode != SSL_ERROR_NONE)
-		{
-			ERR_error_string_n(ERR_get_error(), buffer, 512);
-			mLogger->error("ProcessSSLHandshake() : ssl accept failed, error message : {}", buffer);
-			return -1;
-		}
-	}
-
-	return 0;
+void HttpsServer::PutMemoryBlock(MemoryBlock* memoryBlock)
+{
+	return mMemoryPool->DeAllocate(memoryBlock);
 }
 
 DWORD __stdcall HttpsServer::checkQuitMessage(LPVOID lpParam)
@@ -200,14 +129,13 @@ DWORD __stdcall HttpsServer::checkQuitMessage(LPVOID lpParam)
 HttpsServer::HttpsServer()
 	: mbIsQuitButtonPressed(false)
 	, mSessionIDSequence(0)
-	, mClientThreadPool(ClientThreadPool::GetInstance())
+	, mMemoryPool(new MemoryPool())
+	, mClientThreadPool(ClientThreadPool::GetInstance(mMemoryPool))
 	, mHttpsSocket(NULL)
 	, mIOCPHandle(NULL)
-	, mClientSessions()
 	, mLogger(spdlog::rotating_logger_mt("HttpsServer", "logs/log.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES))
 {
 	mServer = this;
-	mClientSessions.reserve(128);
 
 	SSL_library_init();
 	OpenSSL_add_ssl_algorithms();
@@ -241,29 +169,12 @@ HttpsServer::HttpsServer()
 	{
 		std::cout << "Socket start up Failed(HttpsServer constructor)" << std::endl;
 	}
-
-	mClientThreadPool->Init(mIOCPHandle);
 }
 
 HttpsServer::~HttpsServer()
 {
-	while (mClientThreadPool->IsThreadsRunning())
-	{
-		;
-	}
-
-	ClientWork::ERROR_CODE errorCode;
-	ClientWork* clientCloseWork;
-
-	for (uint32_t i = 0; i < mClientSessions.size(); i++)
-	{
-		clientCloseWork = new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE);
-		errorCode = clientCloseWork->Run(nullptr);
-		assert(errorCode != ClientWork::ERROR_CLOSE_BEFORE_WORK_DONE);
-	}
-
-	mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_CLOSE);
 	delete mClientThreadPool;
+	delete mMemoryPool;
 
 	SSL_CTX_free(mSSLCTX);
 
@@ -296,45 +207,6 @@ void HttpsServer::printSocketError()
 	LocalFree(msg);
 }
 
-void HttpsServer::invalidateSession()
-{
-	for (uint32_t i = 1; i < mClientSessions.size(); i++)
-	{
-		mClientSessions[i]->sessionTimer->SetCurrentTime();
-
-		if (mClientSessions[i]->sessionTimer->IsSessionInvalidated())
-		{
-			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE));
-			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-			eraseClient(i);
-		}
-	}
-}
-
-void HttpsServer::signalForRemainingWorks()
-{
-	if (mClientThreadPool->IsWorkQueueEmpty() != true)
-	{
-		mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-	}
-}
-
-void HttpsServer::eraseClient(uint32_t index)
-{
-	for (uint32_t i = index; i <= mClientSessions.size() - 1; i++)
-	{
-		if (i == mClientSessions.size() - 1)
-		{
-			mClientEventHandles.pop_back();
-			mClientSessions.pop_back();
-			break;
-		}
-
-		mClientSessions[i] = mClientSessions[i + 1];
-		mClientEventHandles[i] = mClientEventHandles[i + 1];
-	}
-}
-
 ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip)
 {
 	ClientSession* clientSession = new ClientSession();
@@ -342,7 +214,15 @@ ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE cl
 	clientSession->processingCount = 0;
 	clientSession->clientSocket = clientSocket;
 	clientSession->eventHandle = clientEventHandle;
+	clientSession->httpObject = new HttpObject();
 	clientSession->clientSSLConnection = clientSSL;
+	clientSession->clientSSLReadBIO = BIO_new(BIO_s_mem());
+	clientSession->clientSSLWriteBIO = BIO_new(BIO_s_mem());
+	clientSession->currentOperation = OPERATION::RECEIVE;
+	BIO_set_nbio(clientSession->clientSSLReadBIO, 1);
+	SSL_set_bio(clientSSL, clientSession->clientSSLReadBIO, clientSession->clientSSLWriteBIO);
+	SSL_set_accept_state(clientSession->clientSSLConnection);
+
 	clientSession->sessionTimer = new SessionTimer();
 	clientSession->ip = new std::string(ip);
 	clientSession->bIsSSLRetryConnection = false;

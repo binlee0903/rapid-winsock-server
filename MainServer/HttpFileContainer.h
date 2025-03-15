@@ -10,15 +10,10 @@
 
 #pragma once
 
-#ifdef _DEBUG
-constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\";
-constexpr char DEFAULT_ASSET_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\";
-#else
-constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resource\\html";
-constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resource\\assets\\css";
-constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resource\\assets\\images";
-constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resource\\assets\\js";
-#endif
+constexpr char DEFAULT_HTML_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\html";
+constexpr char DEFAULT_CSS_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\css";
+constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\images";
+constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb35\\Documents\\resource\\assets\\js";
 
 class HttpFileContainer final
 {

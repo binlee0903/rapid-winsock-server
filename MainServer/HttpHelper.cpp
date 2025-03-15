@@ -1,11 +1,59 @@
 #include "stdafx.h"
 #include "HttpHelper.h"
 
-void httpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
+void httpHelper::WriteHttpsResponseToSSL(SOCKETINFO* socketInfo)
 {
 	static HttpRouter* httpRouter = HttpRouter::GetRouter();
 
-	httpRouter->Route(httpObject, response);
+	std::vector<int8_t> plainResponse;
+	plainResponse.reserve(BLOCK_SIZE);
+
+	httpRouter->Route(socketInfo->session->httpObject, plainResponse);
+
+	int32_t sslErrorCode = 0;
+	size_t responseSize = plainResponse.size();
+	size_t chunkCount = (responseSize / BASIC_SSL_CHUNK_SIZE) + 1;
+	size_t WroteSize = 0;
+	size_t wroteSizeToSSL = 0;
+
+	char buffer[512];
+
+	while (WroteSize != responseSize)
+	{
+		ERR_clear_error();
+
+		if (responseSize - WroteSize >= BASIC_SSL_CHUNK_SIZE)
+		{
+			sslErrorCode = SSL_write_ex(socketInfo->session->clientSSLConnection, &plainResponse[WroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
+		}
+		else
+		{
+			sslErrorCode = SSL_write_ex(socketInfo->session->clientSSLConnection, &plainResponse[WroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
+		}
+
+		sslErrorCode = SSL_get_error(socketInfo->session->clientSSLConnection, sslErrorCode);
+
+		assert(sslErrorCode == SSL_ERROR_NONE);
+
+		WroteSize += wroteSizeToSSL;
+	}
+
+	socketInfo->sentbytes = 0;
+	socketInfo->sendbytes = BIO_pending(socketInfo->session->clientSSLWriteBIO);
+}
+
+void httpHelper::InterLockedIncrement(SOCKETINFO* socketInfo)
+{
+	AcquireSRWLockExclusive(&socketInfo->srwLock);
+	socketInfo->pendingCount++;
+	ReleaseSRWLockExclusive(&socketInfo->srwLock);
+}
+
+void httpHelper::InterLockedDecrement(SOCKETINFO* socketInfo)
+{
+	AcquireSRWLockExclusive(&socketInfo->srwLock);
+	socketInfo->pendingCount--;
+	ReleaseSRWLockExclusive(&socketInfo->srwLock);
 }
 
 bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)

@@ -22,7 +22,6 @@ constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb3543\\Documents\\server-cert\\
 constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
-constexpr uint16_t TIME_OUT = 3000;
 constexpr uint32_t MAX_LOGGER_SIZE = 1048576; // 1MB
 constexpr uint32_t MAX_LOGGER_FILES = 5;
 
@@ -51,9 +50,10 @@ public:
 	 *
 	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
-	virtual int32_t Run();
+	int32_t Run();
 
-	int ProcessSSLHandshake(ClientSession* clientSession);
+	MemoryBlock* GetMemoryBlock();
+	void PutMemoryBlock(MemoryBlock* memoryBlock);
 private:
 	static DWORD __stdcall checkQuitMessage(LPVOID lpParam);
 private:
@@ -61,9 +61,8 @@ private:
 	~HttpsServer();
 
 	void printSocketError();
-	void invalidateSession();
-	void signalForRemainingWorks();
-	void eraseClient(uint32_t index);
+	//void invalidateSession();
+	//void eraseClient(uint32_t index);
 
 	ClientSession* createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip);
 private:
@@ -75,12 +74,10 @@ private:
 	socket_t mHttpsSocket;
 	HANDLE mIOCPHandle;
 	
+	MemoryPool* mMemoryPool;
 	ClientThreadPool* mClientThreadPool;
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
-
-	std::vector<ClientSession*> mClientSessions;
-	std::vector<HANDLE> mClientEventHandles;
 
 	std::shared_ptr<spdlog::logger> mLogger;
 };

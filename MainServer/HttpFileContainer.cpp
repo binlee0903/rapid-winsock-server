@@ -5,6 +5,9 @@ HttpFileContainer::HttpFileContainer()
 {
     std::vector<std::filesystem::directory_iterator> fileLocations;
     fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_HTML_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_CSS_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_JAVASCRIPT_LOCATION));
+    fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_IMAGE_LOCATION));
     //fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_ASSET_LOCATION));
 
     std::vector<std::pair<std::ifstream*, uintmax_t>> fileStreamsAndSize;

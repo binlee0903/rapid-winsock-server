@@ -1,7 +1,7 @@
 #pragma once
 
 constexpr uint32_t BASIC_SSL_CHUNK_SIZE = 16384;
-constexpr uint32_t BUFFER_SIZE = 512;
+constexpr uint32_t BUFFER_SIZE = 1024;
 constexpr uint32_t MAX_REQUEST_SIZE = 1000;
 constexpr uint32_t KEEP_ALIVE_TIME = 5;
 
@@ -20,13 +20,18 @@ namespace ClientWork
 	{
 		HTTPS_CLIENT_OK,
 		HTTPS_CLIENT_ERROR,
+		HTTPS_CLIENT_SSL_HANDSHAKE,
 		HTTPS_CLIENT_NO_AVAILABLE_DATA,
-		HTTPS_CLIENT_INVALID_HTTP_HEADER
+		HTTPS_CLIENT_DISCONNECTED,
+		HTTPS_CLIENT_WANT_READ_DATA,
+		HTTPS_CLIENT_WANT_SEND_DATA,
+		HTTPS_CLIENT_BIO_NOT_READY,
+		HTTPS_CLIENT_INVALID_HTTP_HEADER,
 	};
 
-	bool IsProcessing(ClientSession* session);
+	bool IsProcessing(SOCKETINFO* socketInfo);
 
-	int ProcessSSLHandshake(ClientSession* clientSession);
+	int ProcessSSLHandshake(SOCKETINFO* socketInfo);
 
 	/**
 	 * process https requests.
@@ -38,12 +43,16 @@ namespace ClientWork
 	 *  return HTTPS_CLIENT_ERROR when get error,
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
-	ClientWork::STATUS ProcessRequest(ClientSession* session);
+	ClientWork::STATUS ProcessRequest(SOCKETINFO* socketInfo);
 
-	bool IsNull(ClientSession* session);
+	bool IsNull(SOCKETINFO* socketInfo);
 
-	void CloseConnection(ClientSession* session);
+	void CloseConnection(SOCKETINFO* socketInfo);
 
-	STATUS WriteHttpResponse(ClientSession* session);
-	uint64_t ReceiveData(ClientSession* session, std::string* content);
+	STATUS SendHttpResponse(SOCKETINFO* socketInfo);
+	uint64_t ReceiveData(SOCKETINFO* socketInfo, std::string* content);
+	uint64_t GetRecordSize(const SOCKETINFO* socketInfo);
+	void RemoveData(const SOCKETINFO* socketInfo, uint64_t recordSize);
+	bool IsChangeCipherRecord(const SOCKETINFO* socketInfo);
+	bool IsApplicationRecord(const SOCKETINFO* socketInfo);
 };

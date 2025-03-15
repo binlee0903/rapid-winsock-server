@@ -78,6 +78,12 @@
     <Filter Include="Source\debugging">
       <UniqueIdentifier>{c99ddaff-b236-4a9b-add5-819fbfb56076}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\memory">
+      <UniqueIdentifier>{8d196128-2f1a-4983-bb86-677d13c2bfdc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\memory">
+      <UniqueIdentifier>{46b0ca81-e100-4e73-b4c0-772104ad5ce0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -151,6 +157,12 @@
     </ClCompile>
     <ClCompile Include="ThreadSafeQueue.cpp">
       <Filter>Source\threadPool</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketInfo.cpp">
+      <Filter>Source\network</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryPool.cpp">
+      <Filter>Source\memory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -228,6 +240,12 @@
     </ClInclude>
     <ClInclude Include="ThreadSafeQueue.h">
       <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketInfo.h">
+      <Filter>Header\network</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryPool.h">
+      <Filter>Header\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
