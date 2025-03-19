@@ -3,7 +3,7 @@
 Welcome! This project represents my blog's front and backend server,
 developed using cpp with winsock2.
 
-Average memory usage: 5MB
+Average memory usage: 100MB (Memory Pool)
 
 ## How to use
 
