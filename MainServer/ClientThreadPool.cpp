@@ -54,10 +54,9 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 			error_code = clientWork->Run(nullptr);
 
-			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
+			if (error_code == ClientWork::ERROR_CODE::ERROR_SSL)
 			{
-				mInstance->QueueWork(clientWork);
-				mInstance->Signal(THREAD_SIGNAL);
+				mInstance->QueueWork(new ClientWork(clientWork->GetClientSession(), ClientSessionType::SESSION_CLOSE));
 			}
 			else
 			{
@@ -114,7 +113,7 @@ bool ClientThreadPool::IsThreadsRunning() const
 	return mThreadRunningCount > 0;
 }
 
-bool ClientThreadPool::IsWorkQueueEmpty() const
+bool ClientThreadPool::IsWorkQueueEmpty()
 {
 	return mClientWorks.IsQueueEmpty();
 }
