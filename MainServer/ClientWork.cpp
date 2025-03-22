@@ -38,7 +38,7 @@ ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 			case ClientWork::HTTPS_CLIENT_OK:
 				break;
 			case ClientWork::HTTPS_CLIENT_ERROR:
-				break;
+				return ERROR_SSL;
 			case ClientWork::HTTPS_CLIENT_NO_AVAILABLE_DATA:
 				break;
 			case ClientWork::HTTPS_CLIENT_INVALID_HTTP_HEADER:
@@ -66,6 +66,11 @@ ClientWork::ERROR_CODE ClientWork::Run(void* clientArg)
 bool ClientWork::IsProcessing() const
 {
 	return mClientSession->processingCount > 0;
+}
+
+ClientSession* ClientWork::GetClientSession() const
+{
+	return this->mClientSession;
 }
 
 ClientWork::STATUS ClientWork::ProcessRequest()
@@ -105,14 +110,16 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 	size_t chunkCount = (responseSize / BASIC_SSL_CHUNK_SIZE) + 1;
 	size_t wroteSize = 0;
 	size_t wroteSizeToSSL = 0;
+	u_long availSize = 0;
 
 	char buffer[512];
+	ZeroMemory(buffer, sizeof(buffer));
 
 	while (wroteSize != responseSize)
 	{
 		ERR_clear_error();
 
-		if (responseSize - wroteSize >= BASIC_SSL_CHUNK_SIZE)
+		if (responseSize - wroteSize > BASIC_SSL_CHUNK_SIZE)
 		{
 			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
 		}
@@ -123,18 +130,20 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
 
-		if (sslErrorCode != SSL_ERROR_NONE)
+		if (sslErrorCode == SSL_ERROR_SYSCALL || sslErrorCode == SSL_ERROR_ZERO_RETURN)
 		{
 			AcquireSRWLockExclusive(&mSRWLock);
 			std::cout << "ssl write failed, error Code : " << sslErrorCode << std::endl;
-			int ret = ERR_get_error();
-			ERR_error_string_n(ret, buffer, 512);
+			ERR_error_string_n(sslErrorCode, buffer, 512);
 			std::cout << buffer << std::endl;
 			ReleaseSRWLockExclusive(&mSRWLock);
 			return HTTPS_CLIENT_ERROR;
 		}
 
-		wroteSize += wroteSizeToSSL;
+		if (sslErrorCode == SSL_ERROR_NONE)
+		{
+			wroteSize += wroteSizeToSSL;
+		}
 	}
 
 	return HTTPS_CLIENT_OK;
@@ -173,7 +182,6 @@ uint64_t ClientWork::receiveData(std::string* content)
 		ERR_clear_error();
 		ZeroMemory(buffer, sizeof(buffer));
 		sslErrorCode = SSL_read_ex(mClientSession->clientSSLConnection, buffer, BUFFER_SIZE, &receivedDataLength);
-		sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
 
 		if (receivedDataLength != 0)
 		{

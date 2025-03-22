@@ -14,7 +14,8 @@ public:
 	enum ERROR_CODE
 	{
 		ERROR_NONE,
-		ERROR_CLOSE_BEFORE_WORK_DONE
+		ERROR_CLOSE_BEFORE_WORK_DONE,
+		ERROR_SSL
 	};
 
 	enum STATUS : int8_t
@@ -41,6 +42,7 @@ public:
 	ERROR_CODE Run(void* clientArg);
 
 	bool IsProcessing() const;
+	ClientSession* GetClientSession() const;
 
 	/**
 	 * process https requests.
