@@ -9,52 +9,47 @@ template <typename T>
 class ThreadSafeQueue
 {
 public:
-    ThreadSafeQueue() 
+    ThreadSafeQueue()
+        : mSRWLock()
     {
-        mSRWLock = new SRWLOCK();
-        InitializeSRWLock(mSRWLock);
-    }
-
-    ~ThreadSafeQueue()
-    {
-        delete mSRWLock;
+        InitializeSRWLock(&mSRWLock);
     }
 
     void Push(T value) 
     {
-        AcquireSRWLockExclusive(mSRWLock);
+        AcquireSRWLockExclusive(&mSRWLock);
         queue.push(value);
-        ReleaseSRWLockExclusive(mSRWLock);
+        ReleaseSRWLockExclusive(&mSRWLock);
     }
 
     T Pop() 
     {
-        AcquireSRWLockExclusive(mSRWLock);
+        AcquireSRWLockExclusive(&mSRWLock);
 
         if (queue.empty() == true)
         {
-            ReleaseSRWLockExclusive(mSRWLock);
+            ReleaseSRWLockExclusive(&mSRWLock);
             return nullptr;
         }
 
         T value = queue.front();
         queue.pop();
-        ReleaseSRWLockExclusive(mSRWLock);
+        ReleaseSRWLockExclusive(&mSRWLock);
         return value;
     }
 
-    bool IsQueueEmpty() const 
+    bool IsQueueEmpty() 
     {
         bool bisQueueEmpty = false;
 
-        AcquireSRWLockExclusive(mSRWLock);
+        AcquireSRWLockExclusive(&mSRWLock);
         bisQueueEmpty = queue.empty();
-        ReleaseSRWLockExclusive(mSRWLock);
+        ReleaseSRWLockExclusive(&mSRWLock);
         
         return bisQueueEmpty;
     }
 
 private:
     std::queue<T> queue;
-    SRWLOCK* mSRWLock;
+    SRWLOCK mSRWLock;
 };

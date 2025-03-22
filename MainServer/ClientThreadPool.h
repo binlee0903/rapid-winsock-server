@@ -26,7 +26,7 @@ public:
 	void Init();
 
 	bool IsThreadsRunning() const;
-	bool IsWorkQueueEmpty() const;
+	bool IsWorkQueueEmpty();
 
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
