@@ -44,10 +44,27 @@ int32_t HttpsServer::Run()
 
 	int index = 0;
 	int ret = 0;
+	int chunkIndex = 0;
+	int chunkSize = 64;
 
 	while (!mbIsQuitButtonPressed)
 	{
-		index = WSAWaitForMultipleEvents(mClientEventHandles.size(), mClientEventHandles.data(), false, 1000, false);
+		chunkSize = 64;
+
+		for (int i = 0; i < mClientEventHandles.size() / chunkSize + 1; i++)
+		{
+			index = WSAWaitForMultipleEvents(mClientEventHandles.size() % chunkSize, mClientEventHandles.data() + i * chunkSize, false, 1000, false);
+			chunkIndex = i;
+
+			if (index == WSA_WAIT_TIMEOUT)
+			{
+				continue;
+			}
+			else
+			{
+				break;
+			}
+		}
 
 		if (index == WSA_WAIT_FAILED)
 		{
@@ -58,11 +75,12 @@ int32_t HttpsServer::Run()
 		if (index == WSA_WAIT_TIMEOUT)
 		{
 			signalForRemainingWorks();
-			invalidateSession();
+			//invalidateSession();
 			continue;
 		}
 
 		index -= WSA_WAIT_EVENT_0;
+		index += chunkSize * chunkIndex;
 
 		WSAEnumNetworkEvents(mClientSessions[index]->clientSocket, mClientEventHandles[index], &netEvents);
 
@@ -88,8 +106,8 @@ int32_t HttpsServer::Run()
 
 			mClientSessions.push_back(tempClientSession);
 			mClientEventHandles.push_back(clientEventHandle);
-			tempClientSession = nullptr;
-			clientEventHandle = nullptr;
+			//tempClientSession = nullptr;
+			//clientEventHandle = nullptr;
 			break;
 
 		case FD_READ:
@@ -97,24 +115,13 @@ int32_t HttpsServer::Run()
 
 			if (mClientSessions[index]->bIsSSLConnected == false)
 			{
-				if (mClientSessions[index]->bIsSSLRetryConnection == true)
-				{
-					mLogger->info("Run() : retry ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-				}
-				else
-				{
-					mLogger->info("Run() : attampt ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-				}
-
 				ret = ProcessSSLHandshake(mClientSessions[index]);
 
 				if (ret == SSL_ERROR_WANT_READ)
 				{
-					mClientSessions[index]->bIsSSLRetryConnection = true;
 					break;
 				}
-
-				if (ret != SSL_ERROR_NONE)
+				else if (ret != SSL_ERROR_NONE)
 				{
 					mLogger->info("Run() : failed ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
 					SSL_free(mClientSessions[index]->clientSSLConnection);
@@ -127,8 +134,10 @@ int32_t HttpsServer::Run()
 					eraseClient(index);
 					break;;
 				}
-
-				mClientSessions[index]->bIsSSLConnected = true;
+				else
+				{
+					mClientSessions[index]->bIsSSLConnected = true;
+				}
 			}
 			else
 			{
@@ -158,7 +167,6 @@ int HttpsServer::ProcessSSLHandshake(ClientSession* clientSession)
 
 	int retCode = 0;
 	int errorCode = 0;
-	uint32_t retryCount = 0;
 	char buffer[512];
 	ZeroMemory(buffer, 512);
 
