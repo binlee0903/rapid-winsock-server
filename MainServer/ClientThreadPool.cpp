@@ -6,9 +6,10 @@ ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 ClientThreadPool::ClientThreadPool()
 	: mThreads(new HANDLE[THREAD_COUNT])
 	, mEventHandles(new HANDLE[EVENT_COUNT])
-	, mSRWLock(new SRWLOCK())
+	, mSRWLock()
 	, mThreadRunningCount(0)
 {
+	InitializeSRWLock(&mSRWLock);
 }
 
 ClientThreadPool::~ClientThreadPool()
@@ -23,7 +24,6 @@ ClientThreadPool::~ClientThreadPool()
 		WaitForSingleObject(mThreads[i], INFINITE);
 	}
 
-	delete mSRWLock;
 	delete[] mEventHandles;
 	delete[] mThreads;
 }
@@ -41,31 +41,43 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 		switch (signalType)
 		{
 		case THREAD_SIGNAL:
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			clientWork = mInstance->GetClientWork();
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 
 			if (clientWork == nullptr)
 			{
 				continue;
 			}
 
-			AcquireSRWLockExclusive(mInstance->mSRWLock);
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			mInstance->mThreadRunningCount += 1;
-			ReleaseSRWLockExclusive(mInstance->mSRWLock);
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 
 			error_code = clientWork->Run(nullptr);
 
-			if (error_code == ClientWork::ERROR_CODE::ERROR_SSL)
+			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
 			{
-				mInstance->QueueWork(new ClientWork(clientWork->GetClientSession(), ClientSessionType::SESSION_CLOSE));
+				AcquireSRWLockExclusive(&mInstance->mSRWLock);
+				mInstance->QueueWork(clientWork);
+				mInstance->Signal(THREAD_SIGNAL);
+				ReleaseSRWLockExclusive(&mInstance->mSRWLock);
+			}
+			else if (error_code == ClientWork::ERROR_CODE::ERROR_ZERO_RETURN)
+			{
+				AcquireSRWLockExclusive(&mInstance->mSRWLock);
+				mInstance->cancelWorks(clientWork);
+				clientWork->FinishWork();
+				ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 			}
 			else
 			{
 				clientWork->FinishWork();
 			}
 
-			AcquireSRWLockExclusive(mInstance->mSRWLock);
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			mInstance->mThreadRunningCount -= 1;
-			ReleaseSRWLockExclusive(mInstance->mSRWLock);
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 
 			break;
 
@@ -95,8 +107,6 @@ void ClientThreadPool::Signal(THREAD_EVENT threadEvent)
 
 void ClientThreadPool::Init()
 {
-	InitializeSRWLock(mSRWLock);
-
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		mEventHandles[i] = CreateEvent(nullptr, false, false, nullptr);
@@ -133,4 +143,32 @@ ClientWork* ClientThreadPool::GetClientWork()
 	ClientWork* clientWork = mInstance->mClientWorks.Pop();
 
 	return clientWork;
+}
+
+void ClientThreadPool::cancelWorks(ClientWork* clientWork)
+{
+	ClientWork* queuedWork = nullptr;
+	int size = mInstance->mClientWorks.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		queuedWork = mClientWorks.Pop();
+
+		if (queuedWork->GetType() == ClientSessionType::SESSION_CLOSE)
+		{
+			mClientWorks.Push(queuedWork);
+		}
+		else if (queuedWork->GetClientSession()->sessionID != clientWork->GetClientSession()->sessionID)
+		{
+			mClientWorks.Push(queuedWork);
+		}
+		else
+		{
+			if (queuedWork->IsThisWorkProcessing() != true)
+			{
+				queuedWork->GetClientSession()->processingCount--;
+				queuedWork->FinishWork();
+			}
+		}
+	}
 }

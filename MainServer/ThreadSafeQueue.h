@@ -49,6 +49,11 @@ public:
         return bisQueueEmpty;
     }
 
+    uint32_t size() const
+    {
+        return queue.size();
+    }
+
 private:
     std::queue<T> queue;
     SRWLOCK mSRWLock;

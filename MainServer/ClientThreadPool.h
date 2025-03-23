@@ -31,6 +31,8 @@ public:
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
 
+	void cancelWorks(ClientWork* clientSession);
+
 private:
 	ClientThreadPool();
 
@@ -42,5 +44,5 @@ private:
 
 	HANDLE* mThreads;
 	HANDLE* mEventHandles;
-	SRWLOCK* mSRWLock;
+	SRWLOCK mSRWLock;
 };

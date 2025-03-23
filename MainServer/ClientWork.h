@@ -15,7 +15,8 @@ public:
 	{
 		ERROR_NONE,
 		ERROR_CLOSE_BEFORE_WORK_DONE,
-		ERROR_SSL
+		ERROR_SSL,
+		ERROR_ZERO_RETURN,
 	};
 
 	enum STATUS : int8_t
@@ -23,7 +24,8 @@ public:
 		HTTPS_CLIENT_OK,
 		HTTPS_CLIENT_ERROR,
 		HTTPS_CLIENT_NO_AVAILABLE_DATA,
-		HTTPS_CLIENT_INVALID_HTTP_HEADER
+		HTTPS_CLIENT_INVALID_HTTP_HEADER,
+		HTTPS_CLIENT_ZERO_RETURN,
 	};
 
 	ClientWork(ClientSession* clientSession, ClientSessionType sessionType);
@@ -42,6 +44,7 @@ public:
 	ERROR_CODE Run(void* clientArg);
 
 	bool IsProcessing() const;
+	bool IsThisWorkProcessing() const;
 	ClientSession* GetClientSession() const;
 
 	/**
@@ -53,6 +56,8 @@ public:
 	 *  return HTTPS_CLIENT_NO_AVAILABLE_DATA when request is empty
 	 */
 	ClientWork::STATUS ProcessRequest();
+
+	ClientSessionType GetType() const;
 
 	bool IsNull();
 private:
@@ -68,4 +73,6 @@ private:
 
 	ClientSession* mClientSession;
 	ClientSessionType mClientSessionType;
+
+	bool misbProcessing;
 };
