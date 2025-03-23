@@ -6,24 +6,24 @@ ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 ClientThreadPool::ClientThreadPool()
 	: mThreads(new HANDLE[THREAD_COUNT])
 	, mEventHandles(new HANDLE[EVENT_COUNT])
-	, mSRWLock(new SRWLOCK())
+	, mSRWLock()
 	, mThreadRunningCount(0)
 {
+	InitializeSRWLock(&mSRWLock);
 }
 
 ClientThreadPool::~ClientThreadPool()
 {
-	for (uint16_t i = 0; i < EVENT_COUNT; i++)
+	for (uint32_t i = 0; i < EVENT_COUNT; i++)
 	{
 		CloseHandle(mEventHandles[i]);
 	}
 
-	for (uint16_t i = 0; i < THREAD_COUNT; i++)
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		WaitForSingleObject(mThreads[i], INFINITE);
 	}
 
-	delete mSRWLock;
 	delete[] mEventHandles;
 	delete[] mThreads;
 }
@@ -41,29 +41,44 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 		switch (signalType)
 		{
 		case THREAD_SIGNAL:
-			AcquireSRWLockExclusive(mInstance->mSRWLock);
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			clientWork = mInstance->GetClientWork();
-			ReleaseSRWLockExclusive(mInstance->mSRWLock);
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 
 			if (clientWork == nullptr)
 			{
 				continue;
 			}
 
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			mInstance->mThreadRunningCount += 1;
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
+
 			error_code = clientWork->Run(nullptr);
 
 			if (error_code == ClientWork::ERROR_CODE::ERROR_CLOSE_BEFORE_WORK_DONE)
 			{
+				AcquireSRWLockExclusive(&mInstance->mSRWLock);
 				mInstance->QueueWork(clientWork);
 				mInstance->Signal(THREAD_SIGNAL);
+				ReleaseSRWLockExclusive(&mInstance->mSRWLock);
+			}
+			else if (error_code == ClientWork::ERROR_CODE::ERROR_ZERO_RETURN)
+			{
+				AcquireSRWLockExclusive(&mInstance->mSRWLock);
+				mInstance->cancelWorks(clientWork);
+				clientWork->FinishWork();
+				ReleaseSRWLockExclusive(&mInstance->mSRWLock);
 			}
 			else
 			{
 				clientWork->FinishWork();
 			}
-			// TODO: handle more error
+
+			AcquireSRWLockExclusive(&mInstance->mSRWLock);
 			mInstance->mThreadRunningCount -= 1;
+			ReleaseSRWLockExclusive(&mInstance->mSRWLock);
+
 			break;
 
 		case THREAD_CLOSE:
@@ -79,7 +94,7 @@ end:
 
 void ClientThreadPool::QueueWork(ClientWork* clientWork)
 {
-	mClientWorks.push(clientWork);
+	mClientWorks.Push(clientWork);
 }
 
 void ClientThreadPool::Signal(THREAD_EVENT threadEvent)
@@ -92,14 +107,12 @@ void ClientThreadPool::Signal(THREAD_EVENT threadEvent)
 
 void ClientThreadPool::Init()
 {
-	InitializeSRWLock(mSRWLock);
-
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		mEventHandles[i] = CreateEvent(nullptr, false, false, nullptr);
 	}
 
-	for (uint16_t i = 0; i < THREAD_COUNT; i++)
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		mThreads[i] = CreateThread(nullptr, NULL, &ClientThreadPool::Run, nullptr, NULL, nullptr);
 	}
@@ -110,9 +123,9 @@ bool ClientThreadPool::IsThreadsRunning() const
 	return mThreadRunningCount > 0;
 }
 
-bool ClientThreadPool::IsWorkQueueEmpty() const
+bool ClientThreadPool::IsWorkQueueEmpty()
 {
-	return mClientWorks.empty();
+	return mClientWorks.IsQueueEmpty();
 }
 
 ClientThreadPool* ClientThreadPool::GetInstance()
@@ -127,13 +140,35 @@ ClientThreadPool* ClientThreadPool::GetInstance()
 
 ClientWork* ClientThreadPool::GetClientWork()
 {
-	if (mInstance->mClientWorks.empty() == true)
-	{
-		return nullptr;
-	}
-
-	ClientWork* clientWork = mInstance->mClientWorks.front();
-	mInstance->mClientWorks.pop();
+	ClientWork* clientWork = mInstance->mClientWorks.Pop();
 
 	return clientWork;
+}
+
+void ClientThreadPool::cancelWorks(ClientWork* clientWork)
+{
+	ClientWork* queuedWork = nullptr;
+	int size = mInstance->mClientWorks.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		queuedWork = mClientWorks.Pop();
+
+		if (queuedWork->GetType() == ClientSessionType::SESSION_CLOSE)
+		{
+			mClientWorks.Push(queuedWork);
+		}
+		else if (queuedWork->GetClientSession()->sessionID != clientWork->GetClientSession()->sessionID)
+		{
+			mClientWorks.Push(queuedWork);
+		}
+		else
+		{
+			if (queuedWork->IsThisWorkProcessing() != true)
+			{
+				queuedWork->GetClientSession()->processingCount--;
+				queuedWork->FinishWork();
+			}
+		}
+	}
 }

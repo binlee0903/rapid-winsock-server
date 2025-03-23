@@ -14,9 +14,11 @@ struct ClientSession
 	int32_t processingCount;
 	socket_t clientSocket;
 	HANDLE eventHandle;
+	SRWLOCK lock;
 	SSL* clientSSLConnection;
 	SessionTimer* sessionTimer;
 	std::string* ip;
 	bool bIsSSLConnected;
 	bool bIsSSLRetryConnection;
+	bool bIsDisconnected;
 };

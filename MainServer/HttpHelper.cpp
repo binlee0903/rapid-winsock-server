@@ -1,40 +1,14 @@
 #include "stdafx.h"
 #include "HttpHelper.h"
 
-HttpHelper* HttpHelper::mInstance = nullptr;
-
-HttpHelper::HttpHelper()
-	: mServerHttpVersion("HTTP/1.1")
-	, mRouter(HttpRouter::GetRouter())
+void httpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
 {
+	static HttpRouter* httpRouter = HttpRouter::GetRouter();
+
+	httpRouter->Route(httpObject, response);
 }
 
-HttpHelper::~HttpHelper()
-{
-	delete mRouter;
-}
-
-HttpHelper* HttpHelper::GetHttpHelper()
-{
-	if (mInstance == nullptr)
-	{
-		mInstance = new HttpHelper();
-	}
-
-	return mInstance;
-}
-
-void HttpHelper::DeleteHttpHelper()
-{
-	delete mInstance;
-}
-
-void HttpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
-{
-	mRouter->Route(httpObject, response);
-}
-
-bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) const
+bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 {
 	constexpr char BASIC_DELIM = ' ';
 	constexpr char METHOD_DELIM = ':';
@@ -71,7 +45,7 @@ bool HttpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer) co
 	else
 	{
 		offset += 1;
-	
+
 	}
 
 	firstBuffer = firstBuffer.substr(offset);

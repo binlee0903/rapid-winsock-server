@@ -1,8 +1,9 @@
 #pragma once
 
 #include "ClientWork.h"
+#include "ThreadSafeQueue.h"
 
-constexpr uint32_t THREAD_COUNT = 2;
+constexpr uint32_t THREAD_COUNT = 4;
 constexpr uint32_t EVENT_COUNT = 2;
 
 class ClientThreadPool final
@@ -25,10 +26,12 @@ public:
 	void Init();
 
 	bool IsThreadsRunning() const;
-	bool IsWorkQueueEmpty() const;
+	bool IsWorkQueueEmpty();
 
 private:
 	static DWORD __stdcall Run(LPVOID lpParam);
+
+	void cancelWorks(ClientWork* clientSession);
 
 private:
 	ClientThreadPool();
@@ -36,10 +39,10 @@ private:
 private:
 	static ClientThreadPool* mInstance;
 
-	std::queue<ClientWork*> mClientWorks;
+	ThreadSafeQueue<ClientWork*> mClientWorks;
 	uint32_t mThreadRunningCount;
 
 	HANDLE* mThreads;
 	HANDLE* mEventHandles;
-	SRWLOCK* mSRWLock;
+	SRWLOCK mSRWLock;
 };
