@@ -45,15 +45,23 @@ int32_t HttpsServer::Run()
 	int index = 0;
 	int ret = 0;
 	int chunkIndex = 0;
-	int chunkSize = 64;
+	int chunkSize = WSA_MAXIMUM_WAIT_EVENTS;
+	int size = 0;
 
 	while (!mbIsQuitButtonPressed)
 	{
-		chunkSize = 64;
-
 		for (int i = 0; i < mClientEventHandles.size() / chunkSize + 1; i++)
 		{
-			index = WSAWaitForMultipleEvents(mClientEventHandles.size() % chunkSize, mClientEventHandles.data() + i * chunkSize, false, 1000, false);
+			if (i == mClientEventHandles.size() / chunkSize)
+			{
+				size = mClientEventHandles.size() % chunkSize;
+			}
+			else
+			{
+				size = chunkSize;
+			}
+
+			index = WSAWaitForMultipleEvents(size, &mClientEventHandles[i * chunkSize], false, 1000, false);
 			chunkIndex = i;
 
 			if (index == WSA_WAIT_TIMEOUT)
@@ -75,7 +83,7 @@ int32_t HttpsServer::Run()
 		if (index == WSA_WAIT_TIMEOUT)
 		{
 			signalForRemainingWorks();
-			//invalidateSession();
+			invalidateSession();
 			continue;
 		}
 
@@ -106,8 +114,29 @@ int32_t HttpsServer::Run()
 
 			mClientSessions.push_back(tempClientSession);
 			mClientEventHandles.push_back(clientEventHandle);
-			//tempClientSession = nullptr;
-			//clientEventHandle = nullptr;
+			ret = ProcessSSLHandshake(tempClientSession);
+
+			if (ret == SSL_ERROR_WANT_READ)
+			{
+				break;
+			}
+			else if (ret == -1)
+			{
+				mLogger->info("Run() : failed ssl connection, ip : {}", tempClientSession->ip->c_str());
+				SSL_free(tempClientSession->clientSSLConnection);
+				CloseHandle(tempClientSession->eventHandle);
+				closesocket(tempClientSession->clientSocket);
+				delete tempClientSession->sessionTimer;
+				delete tempClientSession->ip;
+				delete tempClientSession;
+				tempClientSession = nullptr;
+				eraseClient(mClientSessions.size() - 1);
+				break;
+			}
+			else
+			{
+				tempClientSession->bIsSSLConnected = true;
+			}
 			break;
 
 		case FD_READ:
@@ -121,18 +150,13 @@ int32_t HttpsServer::Run()
 				{
 					break;
 				}
-				else if (ret != SSL_ERROR_NONE)
+				else if (ret == -1)
 				{
-					mLogger->info("Run() : failed ssl connection, ip : {}", mClientSessions[index]->ip->c_str());
-					SSL_free(mClientSessions[index]->clientSSLConnection);
-					CloseHandle(mClientSessions[index]->eventHandle);
-					closesocket(mClientSessions[index]->clientSocket);
-					delete mClientSessions[index]->sessionTimer;
-					delete mClientSessions[index]->ip;
-					delete mClientSessions[index];
-					mClientSessions[index] = nullptr;
+					mLogger->info("Run() : client disconnected, ip : {}", mClientSessions[index]->ip->c_str());
+					mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_CLOSE));
+					mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
 					eraseClient(index);
-					break;;
+					break;
 				}
 				else
 				{
@@ -348,6 +372,7 @@ ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE cl
 	ClientSession* clientSession = new ClientSession();
 	clientSession->sessionID = mSessionIDSequence++;
 	clientSession->processingCount = 0;
+	InitializeSRWLock(&clientSession->lock);
 	clientSession->clientSocket = clientSocket;
 	clientSession->eventHandle = clientEventHandle;
 	clientSession->clientSSLConnection = clientSSL;
