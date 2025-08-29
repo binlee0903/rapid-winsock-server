@@ -73,7 +73,7 @@ bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 	{
 		httpObject->SetHttpContentType("image/png");
 	}
-	else if (ext == "html" || httpObject->GetHttpDest() == "")
+	else if (ext == "html" || strlen(httpObject->GetHttpDest()) == 0)
 	{
 		httpObject->SetHttpContentType("text/html");
 	}

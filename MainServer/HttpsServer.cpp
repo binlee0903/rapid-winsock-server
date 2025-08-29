@@ -61,7 +61,7 @@ int32_t HttpsServer::Run()
 				size = chunkSize;
 			}
 
-			index = WSAWaitForMultipleEvents(size, &mClientEventHandles[i * chunkSize], false, 1000, false);
+			index = WSAWaitForMultipleEvents(size, &mClientEventHandles[i * chunkSize], false, 10, false);
 			chunkIndex = i;
 
 			if (index == WSA_WAIT_TIMEOUT)

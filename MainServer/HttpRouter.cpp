@@ -44,8 +44,8 @@ void HttpRouter::createFileRequestResponse(HttpObject* httpObject, std::vector<i
 		break;
 	}
 
-	std::string& httpDest = httpObject->GetHttpDest();
-	const auto* destFile = mHttpFileContainer->GetFile(&httpDest);
+	const char* httpDest = httpObject->GetHttpDest();
+	const auto* destFile = mHttpFileContainer->GetFile(httpDest);
 
 	if (destFile == nullptr)
 	{
@@ -79,7 +79,7 @@ HttpRouter* HttpRouter::GetRouter()
 
 void HttpRouter::Route(HttpObject* httpObject, std::vector<int8_t>& response) const
 {
-	std::string& httpDest = httpObject->GetHttpDest();
+	const char* httpDest = httpObject->GetHttpDest();
 
 	if (!isServiceRequest(httpDest))
 	{
@@ -93,10 +93,7 @@ void HttpRouter::Route(HttpObject* httpObject, std::vector<int8_t>& response) co
 
 void HttpRouter::executeService(HttpObject* httpObject, std::vector<int8_t>& response) const
 {
-	std::string serviceName;
-	http::GetServiceNameFromDest(httpObject, serviceName);
-
-	uint64_t serviceNameHash = mHash.GetHashValue(&serviceName);
+	uint64_t serviceNameHash = mHash.GetHashValue(httpObject->GetHttpDest());
 
 	if (!isHasServiceRequestAndAvailable(serviceNameHash))
 	{
@@ -124,11 +121,11 @@ void HttpRouter::executeService(HttpObject* httpObject, std::vector<int8_t>& res
 	delete serviceOutput;
 }
 
-bool HttpRouter::isServiceRequest(std::string& path) const
+bool HttpRouter::isServiceRequest(const char* path) const
 {
-	for (auto& x : path)
+	while (*path != '\0')
 	{
-		if (x == '.')
+		if (*(path++) == '.')
 		{
 			return false;
 		}

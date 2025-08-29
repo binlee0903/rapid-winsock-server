@@ -52,7 +52,7 @@ public:
 	 *
 	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
-	virtual int32_t Run();
+	int32_t Run();
 
 	int ProcessSSLHandshake(ClientSession* clientSession);
 private:

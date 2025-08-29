@@ -17,4 +17,7 @@ namespace http
 	void GetServiceNameFromDest(HttpObject* httpObject, std::string& output);
 
 	bool IsKeepAlive(HttpObject* httpObject);
+
+	int findIndex(const char* str, char target);
+	const char* substr(const char* str, int index);
 }

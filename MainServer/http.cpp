@@ -13,7 +13,7 @@ void http::Create200Response(HttpObject* httpObject, const std::vector<int8_t>* 
 {
 	AppendStringToVector(HTTP_200_MESSAGE, sizeof(HTTP_200_MESSAGE) - 1, response);
 
-	std::string& httpDest = httpObject->GetHttpDest();
+	const char* httpDest = httpObject->GetHttpDest();
 	std::stringstream is;
 	is << contentBody->size();
 
@@ -31,7 +31,7 @@ void http::Create200Response(HttpObject* httpObject, const std::vector<int8_t>* 
 	}
 
 	http::AppendStringToVector("Content-Type: ", 14, response);
-	http::AppendStringToVector(httpObject->GetHttpContentType().c_str(), httpObject->GetHttpContentType().size(), response);
+	http::AppendStringToVector(httpObject->GetHttpContentType(), strlen(httpObject->GetHttpContentType()), response);
 	response.push_back('\r');
 	response.push_back('\n');
 	response.push_back('\r');
@@ -122,11 +122,10 @@ void http::Create503Response(HttpObject* httpObject, HttpFileContainer* fileCont
 
 void http::GetServiceNameFromDest(HttpObject* httpObject, std::string& output)
 {
-	std::string& httpDest = httpObject->GetHttpDest();
-	std::string ext;
+	const char* httpDest = httpObject->GetHttpDest();
 	size_t offset = 0;
-	offset = httpDest.rfind(L'/') + 1;
-	output = httpDest.substr(offset);
+	offset = findIndex(httpDest, '/');
+	output += substr(httpDest, offset);
 }
 
 bool http::IsKeepAlive(HttpObject* httpObject)
@@ -150,4 +149,21 @@ bool http::IsKeepAlive(HttpObject* httpObject)
 			return false;
 		}
 	}
+}
+
+const char* http::substr(const char* str, int index)
+{
+	return &str[index];
+}
+
+int http::findIndex(const char* str, char target)
+{
+	int index = 0;
+
+	while (*(str++) != target)
+	{
+		index++;
+	}
+
+	return index;
 }

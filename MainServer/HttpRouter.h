@@ -36,7 +36,7 @@ private:
 	void createFileRequestResponse(HttpObject* httpObject, std::vector<int8_t>& response) const;
 	void executeService(HttpObject* httpObject, std::vector<int8_t>& response) const;
 
-	bool isServiceRequest(std::string& path) const;
+	bool isServiceRequest(const char* path) const;
 	bool isHasServiceRequestAndAvailable(uint64_t serviceHash) const;
 	bool isHasFileRequestAndAvailable(std::string& path) const;
 
