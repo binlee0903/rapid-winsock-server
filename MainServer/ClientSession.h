@@ -21,6 +21,7 @@ struct ClientSession
 	socket_t clientSocket;
 	HANDLE eventHandle;
 	HttpObject* httpObject;
+	SRWLOCK lock;
 	SSL* clientSSLConnection;
 	BIO* clientSSLReadBIO;
 	BIO* clientSSLWriteBIO;

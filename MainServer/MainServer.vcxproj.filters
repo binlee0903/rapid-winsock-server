@@ -95,7 +95,7 @@
     <ClCompile Include="HttpObject.cpp">
       <Filter>Source\http</Filter>
     </ClCompile>
-    <ClCompile Include="HttpRouter.cpp">
+    <ClCompile Include="HttpResponseGenerator.cpp">
       <Filter>Source\http</Filter>
     </ClCompile>
     <ClCompile Include="HttpFileContainer.cpp">
@@ -175,7 +175,7 @@
     <ClInclude Include="HttpObject.h">
       <Filter>Header\http</Filter>
     </ClInclude>
-    <ClInclude Include="HttpRouter.h">
+    <ClInclude Include="HttpResponseGenerator.h">
       <Filter>Header\http</Filter>
     </ClInclude>
     <ClInclude Include="SQLiteConnector.h">

@@ -14,9 +14,9 @@ HttpObject::~HttpObject()
 	delete mHttpURLArguments;
 }
 
-std::string& HttpObject::GetHttpMethod()
+const char* HttpObject::GetHttpMethod() const
 {
-	return mHttpMethod;
+	return mHttpMethod.c_str();
 }
 
 void HttpObject::SetHttpMethod(std::string& httpMethod)
@@ -24,9 +24,9 @@ void HttpObject::SetHttpMethod(std::string& httpMethod)
 	mHttpMethod = httpMethod;
 }
 
-std::string& HttpObject::GetHttpDest()
+const char* HttpObject::GetHttpDest() const
 {
-	return mDest;
+	return mDest.c_str();
 }
 
 void HttpObject::SetHttpDest(std::string& httpDest)
@@ -34,9 +34,9 @@ void HttpObject::SetHttpDest(std::string& httpDest)
 	mDest = httpDest;
 }
 
-std::string& HttpObject::GetHttpContentType()
+const char* HttpObject::GetHttpContentType() const
 {
-	return mContentType;
+	return mContentType.c_str();
 }
 
 void HttpObject::SetHttpContentType(const char* httpContentType)
@@ -44,7 +44,7 @@ void HttpObject::SetHttpContentType(const char* httpContentType)
 	mContentType = httpContentType;
 }
 
-HttpObject::HttpVersion HttpObject::GetHttpVersion()
+HttpObject::HttpVersion HttpObject::GetHttpVersion() const
 {
 	return mHttpVersion;
 }
@@ -90,7 +90,7 @@ void HttpObject::SetHttpVersion(std::string& httpVersion)
 	}
 }
 
-std::unordered_map<std::string, std::string>* HttpObject::GetHttpArguments()
+std::unordered_map<std::string, std::string>* HttpObject::GetHttpArguments() const
 {
 	return mHttpURLArguments;
 }
@@ -100,7 +100,7 @@ void HttpObject::SetHttpArguments(std::unordered_map<std::string, std::string>* 
 	mHttpURLArguments = httpArguments;
 }
 
-std::unordered_map<std::string, std::string>* HttpObject::GetHttpHeaders()
+std::unordered_map<std::string, std::string>* HttpObject::GetHttpHeaders() const
 {
 	return mHttpHeaders;
 }

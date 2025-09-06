@@ -24,7 +24,7 @@ uint64_t GetArticleService::GetServiceName() const
 	return mHashedServiceName;
 }
 
-bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const
+bool GetArticleService::Run(HttpObject* httpObject, int8_t** serviceOutput, int64_t* serviceOutputSize) const
 {
 	Json::Value article;
 	auto* httpHeaders = httpObject->GetHttpHeaders();
@@ -58,10 +58,17 @@ bool GetArticleService::Run(HttpObject* httpObject, std::vector<int8_t>& service
 
 	std::string articlesString = ss.str();
 
-	for (auto& x : articlesString)
+	for (uintmax_t i = 0; i < articlesString.size(); i++)
 	{
-		serviceOutput.push_back(x);
+		*(*serviceOutput)++ = articlesString[i];
 	}
 
+	*serviceOutputSize = articlesString.size();
+
 	return true;
+}
+
+bool GetArticleService::Run(HttpObject* httpObject, std::string* serviceOutput) const
+{
+	return false;
 }

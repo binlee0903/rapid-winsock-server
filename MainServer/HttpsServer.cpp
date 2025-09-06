@@ -40,6 +40,9 @@ int32_t HttpsServer::Run()
 
 	DWORD flags = 0;
 	int ret = 0;
+	int chunkIndex = 0;
+	int chunkSize = WSA_MAXIMUM_WAIT_EVENTS;
+	int size = 0;
 
 	mClientThreadPool->Init(mIOCPHandle);
 
@@ -212,6 +215,7 @@ ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE cl
 	ClientSession* clientSession = new ClientSession();
 	clientSession->sessionID = mSessionIDSequence++;
 	clientSession->processingCount = 0;
+	InitializeSRWLock(&clientSession->lock);
 	clientSession->clientSocket = clientSocket;
 	clientSession->eventHandle = clientEventHandle;
 	clientSession->httpObject = new HttpObject();

@@ -24,7 +24,12 @@ uint64_t GetArticleListService::GetServiceName() const
 	return mHashedServiceName;
 }
 
-bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const
+bool GetArticleListService::Run(HttpObject* httpObject, int8_t** serviceOutput, int64_t* serviceOutputSize) const
+{
+	return false;
+}
+
+bool GetArticleListService::Run(HttpObject* httpObject, std::string* serviceOutput) const
 {
 	Json::Value articles;
 	int pageIndex = -1;
@@ -36,7 +41,7 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 		return false;
 	}
 
-	std::stringstream pageIndexStringStream { headers->at("Page-Index") };
+	std::stringstream pageIndexStringStream{ headers->at("Page-Index") };
 
 	pageIndexStringStream >> pageIndex;
 
@@ -49,13 +54,7 @@ bool GetArticleListService::Run(HttpObject* httpObject, std::vector<int8_t>& ser
 
 	std::stringstream ss;
 	ss << articles;
-
-	std::string buffer = ss.str();
-
-	for (auto& x : buffer)
-	{
-		serviceOutput.push_back(x);
-	}
+	ss >> *serviceOutput;
 
 	return true;
 }

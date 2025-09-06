@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "HttpHelper.h"
+#include "HttpResponseGenerator.h"
 
 void httpHelper::WriteHttpsResponseToSSL(SOCKETINFO* socketInfo)
 {
@@ -55,6 +56,7 @@ void httpHelper::InterLockedDecrement(SOCKETINFO* socketInfo)
 	socketInfo->pendingCount--;
 	ReleaseSRWLockExclusive(&socketInfo->srwLock);
 }
+
 
 bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 {
@@ -121,7 +123,7 @@ bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 	{
 		httpObject->SetHttpContentType("image/png");
 	}
-	else if (ext == "html" || httpObject->GetHttpDest() == "")
+	else if (ext == "html" || strlen(httpObject->GetHttpDest()) == 0)
 	{
 		httpObject->SetHttpContentType("text/html");
 	}

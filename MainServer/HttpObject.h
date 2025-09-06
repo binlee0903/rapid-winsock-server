@@ -27,22 +27,22 @@ public:
 	HttpObject(const HttpObject & rhs) = delete;
 	HttpObject& operator=(const HttpObject& rhs) = delete;
 
-	std::string& GetHttpMethod();
+	const char* GetHttpMethod() const;
 	void SetHttpMethod(std::string& httpMethod);
 
-	std::string& GetHttpDest();
+	const char* GetHttpDest() const;
 	void SetHttpDest(std::string& httpDest);
 
-	std::string& GetHttpContentType();
+	const char* GetHttpContentType() const;
 	void SetHttpContentType(const char* httpContentType);
 
-	HttpVersion GetHttpVersion();
+	HttpVersion GetHttpVersion() const;
 	void SetHttpVersion(std::string& httpVersion);
 
-	std::unordered_map<std::string, std::string>* GetHttpArguments();
+	std::unordered_map<std::string, std::string>* GetHttpArguments() const;
 	void SetHttpArguments(std::unordered_map<std::string, std::string>* httpArguments);
 
-	std::unordered_map<std::string, std::string>* GetHttpHeaders();
+	std::unordered_map<std::string, std::string>* GetHttpHeaders() const;
 	void InsertHttpHeader(std::string& key, std::string& value);
 
 private:

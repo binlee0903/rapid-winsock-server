@@ -9,5 +9,6 @@ namespace httpHelper
 	void InterLockedIncrement(SOCKETINFO* socketInfo);
 	void InterLockedDecrement(SOCKETINFO* socketInfo);
 
+	void CreateHttpResponse(HttpObject* httpObject, int8_t** response);
 	bool PrepareResponse(HttpObject* httpObject, std::string& buffer);
 }

@@ -8,16 +8,25 @@ ClientThreadPool::ClientThreadPool(MemoryPool* memoryPool)
 	: mThreads(new HANDLE[THREAD_COUNT])
 	, mSRWLock()
 	, mMemoryPool(memoryPool)
+	, mEventHandles(new HANDLE[THREAD_EVENT_COUNT])
+	, mThreadRunningCount(0)
 {
+	InitializeSRWLock(&mSRWLock);
 }
 
 ClientThreadPool::~ClientThreadPool()
 {
+	for (uint32_t i = 0; i < THREAD_EVENT_COUNT; i++)
+	{
+		CloseHandle(mEventHandles[i]);
+	}
+
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		WaitForSingleObject(mThreads[i], INFINITE);
 	}
 
+	delete[] mEventHandles;
 	delete[] mThreads;
 }
 

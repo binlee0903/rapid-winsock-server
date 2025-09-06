@@ -6,15 +6,18 @@ private:
 	std::string INDEX_PAGE_SERVICE_NAME = "";
 
 public:
-	static IndexPageService* GetIndexPageServiceInstance(std::vector<int8_t>* htmlPage);
-	~IndexPageService() = default;
+	static IndexPageService* GetIndexPageServiceInstance(File* file);
+	virtual ~IndexPageService();
 
 	virtual uint64_t GetServiceName() const override;
-	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const override;
+
+	virtual bool Run(HttpObject* httpObject, int8_t** serviceOutput, int64_t* serviceOutputSize) const override;
+	virtual bool Run(HttpObject* httpObject, std::string* serviceOutput) const override;
 private:
-	IndexPageService(std::vector<int8_t>* htmlPage);
+	IndexPageService(int8_t* htmlPage, intmax_t fileSize);
 
 private:
 	static IndexPageService* mIndexPageService;
-	std::vector<int8_t>* mHtmlPage;
+	int8_t* mHtmlPage;
+	intmax_t mFileSize;
 };

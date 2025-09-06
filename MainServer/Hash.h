@@ -12,4 +12,5 @@ class Hash final
 {
 public:
 	static uint64_t GetHashValue(const std::string* target);
+	static uint64_t GetHashValue(const char* target);
 };

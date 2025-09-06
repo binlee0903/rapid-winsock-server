@@ -288,14 +288,41 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 			}
 		}
 
-		if (receivedDataLength != 0)
+		if (sslErrorCode <= 0)
 		{
-			for (uint32_t i = 0; i < receivedDataLength; ++i)
+			sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
+
+			if (sslErrorCode == SSL_ERROR_ZERO_RETURN)
 			{
-				content->push_back(buffer[i]);
+				shutdown(mClientSession->clientSocket, SD_SEND);
+				SSL_shutdown(mClientSession->clientSSLConnection);
+				return HTTPS_CLIENT_ZERO_RETURN;
 			}
 
-			recvLenSum += receivedDataLength;
+			if (sslErrorCode == SSL_ERROR_WANT_READ)
+			{
+				return HTTPS_CLIENT_NO_AVAILABLE_DATA;
+			}
+
+			if (sslErrorCode != SSL_ERROR_NONE)
+			{
+				AcquireSRWLockExclusive(&mSRWLock);
+				std::cout << "ssl read failed, error Code : " << sslErrorCode << std::endl;
+				ReleaseSRWLockExclusive(&mSRWLock);
+				return HTTPS_CLIENT_ERROR;
+			}
+		}
+		else
+		{
+			if (receivedDataLength != 0)
+			{
+				for (uint32_t i = 0; i < receivedDataLength; ++i)
+				{
+					content->push_back(buffer[i]);
+				}
+
+				recvLenSum += receivedDataLength;
+			}
 		}
 
 		avaliableDataSize = BIO_pending(socketInfo->session->clientSSLReadBIO);
