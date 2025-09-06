@@ -10,7 +10,8 @@ public:
 	~GetArticleListService() = default;
 
 	virtual uint64_t GetServiceName() const override;
-	virtual bool Run(HttpObject* httpObject, std::vector<int8_t>& serviceOutput) const override;
+	virtual bool Run(HttpObject* httpObject, int8_t** serviceOutput, int64_t* serviceOutputSize) const override;
+	virtual bool Run(HttpObject* httpObject, std::string* serviceOutput) const override;
 private:
 	GetArticleListService(SQLiteConnector* sqliteConnector);
 

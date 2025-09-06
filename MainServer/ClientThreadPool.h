@@ -3,8 +3,8 @@
 #include "ClientWork.h"
 #include "ThreadSafeQueue.h"
 
-constexpr uint32_t THREAD_COUNT = 4;
-constexpr uint32_t EVENT_COUNT = 2;
+constexpr uint32_t THREAD_COUNT = 1;
+constexpr uint32_t THREAD_EVENT_COUNT = 2;
 
 class ClientThreadPool final
 {

@@ -9,43 +9,40 @@ HttpFileContainer::HttpFileContainer()
     fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_IMAGE_LOCATION));
     fileLocations.push_back(std::filesystem::directory_iterator(DEFAULT_JAVASCRIPT_LOCATION));
 
-    std::vector<std::pair<std::ifstream*, uintmax_t>> fileStreamsAndSize;
-    std::vector<std::string> fileNames;
-    fileStreamsAndSize.reserve(16);
-    fileNames.reserve(16);
+    uintmax_t fileSize;
+    std::ifstream ifs;
 
-    std::ifstream* ifstream;
-
-    for (const auto& x : fileLocations)
+    for (const auto& fileLocations : fileLocations)
     {
-        for (const auto& y : x)
+        for (const auto& fileLocation : fileLocations)
         {
-            if (y.is_directory() == false)
+            if (fileLocation.is_directory() == false)
             {
-                ifstream = new std::ifstream(y.path(), std::ios::binary);
-                fileStreamsAndSize.push_back(std::pair<std::ifstream*, uintmax_t>(ifstream, std::filesystem::file_size(y.path())));
-                fileNames.push_back(y.path().filename().string());
+                ifs.open(fileLocation.path(), std::ios::binary);
+
+                if (ifs.is_open() == true)
+                {
+                    ifs = std::ifstream(fileLocation.path(), std::ios::binary);
+                    fileSize = std::filesystem::file_size(fileLocation.path());
+
+                    int8_t* fileBuffer = new int8_t[fileSize]; // TODO: replace to MemoryPool
+                    
+                    ifs.read(reinterpret_cast<char*>(fileBuffer), fileSize);
+
+                    File* file = new File();
+                    file->File = fileBuffer;
+                    file->FileSize = fileSize;
+
+                    mBinaryFileContainer.insert({ mHash.GetHashValue(fileLocation.path().filename().string().c_str()), file });
+                }
+                else
+                {
+                    assert(false, "file read failed");
+                }
+
+                ifs.close();
             }
         }
-    }
-
-    for (uint16_t i = 0; i < fileNames.size(); i++)
-    {
-        auto* fileBuffer = new std::vector<int8_t>();
-        fileBuffer->reserve(fileStreamsAndSize[i].second);
-
-        for (size_t j = 0; j < fileStreamsAndSize[i].second; j++)
-        {
-            fileBuffer->push_back(fileStreamsAndSize[i].first->get());
-        }
-
-        mBinaryFileContainer.insert(std::pair<uint64_t, std::vector<int8_t>*>(mHash.GetHashValue(&fileNames[i]), fileBuffer));
-    }
-
-    for (auto& x : fileStreamsAndSize)
-    {
-        x.first->close();
-        delete x.first;
     }
 }
 
@@ -53,15 +50,28 @@ HttpFileContainer::~HttpFileContainer()
 {
     for (auto& x : mBinaryFileContainer)
     {
+        delete[] x.second->File;
         delete x.second;
     }
 }
 
-std::vector<int8_t>* HttpFileContainer::GetFile(const std::string* fileName) const
+File* HttpFileContainer::GetFile(const std::string* fileName) const
 {
     auto file = mBinaryFileContainer.find(mHash.GetHashValue(fileName));
 
-    if (file == std::end(mBinaryFileContainer))
+    if (file == mBinaryFileContainer.end())
+    {
+        return nullptr;
+    }
+
+    return file->second;
+}
+
+File* HttpFileContainer::GetFile(const char* fileName) const
+{
+    auto file = mBinaryFileContainer.find(mHash.GetHashValue(fileName));
+
+    if (file == mBinaryFileContainer.end())
     {
         return nullptr;
     }

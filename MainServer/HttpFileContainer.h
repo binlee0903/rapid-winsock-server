@@ -22,6 +22,12 @@ constexpr char DEFAULT_IMAGE_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resour
 constexpr char DEFAULT_JAVASCRIPT_LOCATION[] = "C:\\Users\\egb3543\\Documents\\resource\\assets\\js";
 #endif
 
+struct File
+{
+	intmax_t FileSize;
+	int8_t* File;
+};
+
 class HttpFileContainer final
 {
 public:
@@ -37,11 +43,11 @@ public:
 	 * \param fileName key value
 	 * \return file content pointer
 	 */
-	std::vector<int8_t>* GetFile(const std::string* fileName) const;
+	File* GetFile(const std::string* fileName) const;
+	File* GetFile(const char* fileName) const;
 
 private:
 	Hash mHash;
-	std::vector<int8_t> mIndexPage;
-	std::unordered_map<uint64_t, std::vector<int8_t>*> mBinaryFileContainer;
+	std::unordered_map<uint64_t, File*> mBinaryFileContainer;
 };
 

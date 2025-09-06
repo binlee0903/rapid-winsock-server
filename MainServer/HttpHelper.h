@@ -3,6 +3,6 @@
 
 namespace httpHelper
 {
-	void CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response);
+	void CreateHttpResponse(HttpObject* httpObject, int8_t** response);
 	bool PrepareResponse(HttpObject* httpObject, std::string& buffer);
 }

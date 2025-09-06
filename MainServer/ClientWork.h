@@ -68,6 +68,7 @@ private:
 
 private:
 	static SRWLOCK mSRWLock;
+	static HttpResponseGenerator* mHttpResponseGenerator;
 
 	HttpObject* mHttpObject;
 

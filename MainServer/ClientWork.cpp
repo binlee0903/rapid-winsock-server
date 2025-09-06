@@ -2,6 +2,7 @@
 #include "ClientWork.h"
 
 SRWLOCK ClientWork::mSRWLock = { 0 };
+HttpResponseGenerator* ClientWork::mHttpResponseGenerator = HttpResponseGenerator::GetRouter();
 
 ClientWork::ClientWork(ClientSession* clientSession, ClientSessionType sessionType)
 	: mHttpObject(new HttpObject())
@@ -133,13 +134,10 @@ bool ClientWork::IsNull()
 
 ClientWork::STATUS ClientWork::writeHttpResponse()
 {
-	std::vector<int8_t> response;
-	response.reserve(BUFFER_SIZE);
-
-	httpHelper::CreateHttpResponse(mHttpObject, response);
+	int8_t* responseBody; // allocate heap memory internally. this needs to be replaced by memorypool 
+	size_t responseSize = mHttpResponseGenerator->Generate(mHttpObject, &responseBody);
 
 	int32_t sslErrorCode = 0;
-	size_t responseSize = response.size();
 	size_t chunkCount = (responseSize / BASIC_SSL_CHUNK_SIZE) + 1;
 	size_t wroteSize = 0;
 	size_t wroteSizeToSSL = 0;
@@ -154,11 +152,11 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 		if (responseSize - wroteSize > BASIC_SSL_CHUNK_SIZE)
 		{
-			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &responseBody[wroteSize], BASIC_SSL_CHUNK_SIZE, &wroteSizeToSSL);
 		}
 		else
 		{
-			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &response[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
+			sslErrorCode = SSL_write_ex(mClientSession->clientSSLConnection, &responseBody[wroteSize], responseSize - BASIC_SSL_CHUNK_SIZE * (chunkCount - 1), &wroteSizeToSSL);
 		}
 
 		if (sslErrorCode <= 0)
@@ -167,6 +165,7 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 			if (sslErrorCode == SSL_ERROR_ZERO_RETURN)
 			{
+				delete[] responseBody;
 				shutdown(mClientSession->clientSocket, SD_SEND);
 				SSL_shutdown(mClientSession->clientSSLConnection);
 				return HTTPS_CLIENT_ZERO_RETURN;
@@ -174,6 +173,8 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 
 			if (sslErrorCode != SSL_ERROR_NONE)
 			{
+				delete[] responseBody;
+
 				AcquireSRWLockExclusive(&mSRWLock);
 				std::cout << "ssl write failed, error Code : " << sslErrorCode << std::endl;
 				ERR_error_string_n(sslErrorCode, buffer, 512);
@@ -188,6 +189,7 @@ ClientWork::STATUS ClientWork::writeHttpResponse()
 		}
 	}
 
+	delete[] responseBody;
 	return HTTPS_CLIENT_OK;
 }
 

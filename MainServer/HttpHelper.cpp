@@ -1,12 +1,5 @@
 #include "stdafx.h"
-#include "HttpHelper.h"
-
-void httpHelper::CreateHttpResponse(HttpObject* httpObject, std::vector<int8_t>& response)
-{
-	static HttpRouter* httpRouter = HttpRouter::GetRouter();
-
-	httpRouter->Route(httpObject, response);
-}
+#include "HttpResponseGenerator.h"
 
 bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 {

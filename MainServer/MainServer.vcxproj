@@ -204,7 +204,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="HttpRouter.cpp">
+    <ClCompile Include="HttpResponseGenerator.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -280,7 +280,7 @@
     <ClInclude Include="GetArticleListService.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="http.h" />
-    <ClInclude Include="HttpRouter.h" />
+    <ClInclude Include="HttpResponseGenerator.h" />
     <ClInclude Include="HttpFileContainer.h" />
     <ClInclude Include="HttpHelper.h" />
     <ClInclude Include="HttpObject.h" />
