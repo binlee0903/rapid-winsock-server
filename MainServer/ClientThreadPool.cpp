@@ -5,7 +5,7 @@ ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 
 ClientThreadPool::ClientThreadPool()
 	: mThreads(new HANDLE[THREAD_COUNT])
-	, mEventHandles(new HANDLE[EVENT_COUNT])
+	, mEventHandles(new HANDLE[THREAD_EVENT_COUNT])
 	, mSRWLock()
 	, mThreadRunningCount(0)
 {
@@ -14,7 +14,7 @@ ClientThreadPool::ClientThreadPool()
 
 ClientThreadPool::~ClientThreadPool()
 {
-	for (uint32_t i = 0; i < EVENT_COUNT; i++)
+	for (uint32_t i = 0; i < THREAD_EVENT_COUNT; i++)
 	{
 		CloseHandle(mEventHandles[i]);
 	}
@@ -36,7 +36,7 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 	while (true)
 	{
-		signalType = WaitForMultipleObjects(EVENT_COUNT, mInstance->mEventHandles, false, INFINITE);
+		signalType = WaitForMultipleObjects(THREAD_EVENT_COUNT, mInstance->mEventHandles, false, INFINITE);
 
 		switch (signalType)
 		{
