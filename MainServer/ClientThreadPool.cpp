@@ -1,6 +1,8 @@
 ﻿#include "stdafx.h"
 #include "ClientThreadPool.h"
 
+// 많이 쓰는건 통계적으로 일반적인 크기 할당하기, 예외적인 경우에만 new
+
 ClientThreadPool* ClientThreadPool::mInstance = nullptr;
 
 ClientThreadPool::ClientThreadPool()
@@ -91,6 +93,8 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 end:
 	return 0;
 }
+
+// stored procedure 찾아보기.
 
 void ClientThreadPool::QueueWork(ClientWork* clientWork)
 {
