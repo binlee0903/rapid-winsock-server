@@ -244,9 +244,6 @@ uint64_t ClientWork::receiveData(std::string* content)
 
 			if (sslErrorCode != SSL_ERROR_NONE)
 			{
-				AcquireSRWLockExclusive(&mSRWLock);
-				std::cout << "ssl read failed, error Code : " << sslErrorCode << std::endl;
-				ReleaseSRWLockExclusive(&mSRWLock);
 				return HTTPS_CLIENT_ERROR;
 			}
 		}
