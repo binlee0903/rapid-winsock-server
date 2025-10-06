@@ -123,14 +123,9 @@ int32_t HttpsServer::Run()
 			else if (ret == -1)
 			{
 				mLogger->info("Run() : failed ssl connection, ip : {}", tempClientSession->ip->c_str());
-				SSL_free(tempClientSession->clientSSLConnection);
-				CloseHandle(tempClientSession->eventHandle);
-				closesocket(tempClientSession->clientSocket);
-				delete tempClientSession->sessionTimer;
-				delete tempClientSession->ip;
-				delete tempClientSession;
+				releaseClient(tempClientSession);
+				eraseClientFromList(mClientSessions.size() - 1);
 				tempClientSession = nullptr;
-				eraseClient(mClientSessions.size() - 1);
 				break;
 			}
 			else
@@ -155,7 +150,7 @@ int32_t HttpsServer::Run()
 					mLogger->info("Run() : client disconnected, ip : {}", mClientSessions[index]->ip->c_str());
 					mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_CLOSE));
 					mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-					eraseClient(index);
+					eraseClientFromList(index);
 					break;
 				}
 				else
@@ -174,7 +169,7 @@ int32_t HttpsServer::Run()
 			mLogger->info("Run() : client disconnected, ip : {}", mClientSessions[index]->ip->c_str());
 			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[index], ClientSessionType::SESSION_CLOSE));
 			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-			eraseClient(index);
+			eraseClientFromList(index);
 			break;
 		}
 
@@ -338,7 +333,7 @@ void HttpsServer::invalidateSession()
 		{
 			mClientThreadPool->QueueWork(new ClientWork(mClientSessions[i], ClientSessionType::SESSION_CLOSE));
 			mClientThreadPool->Signal(ClientThreadPool::THREAD_EVENT::THREAD_SIGNAL);
-			eraseClient(i);
+			eraseClientFromList(i);
 		}
 	}
 }
@@ -351,7 +346,7 @@ void HttpsServer::signalForRemainingWorks()
 	}
 }
 
-void HttpsServer::eraseClient(uint32_t index)
+void HttpsServer::eraseClientFromList(uint32_t index)
 {
 	for (uint32_t i = index; i <= mClientSessions.size() - 1; i++)
 	{
@@ -365,6 +360,16 @@ void HttpsServer::eraseClient(uint32_t index)
 		mClientSessions[i] = mClientSessions[i + 1];
 		mClientEventHandles[i] = mClientEventHandles[i + 1];
 	}
+}
+
+void HttpsServer::releaseClient(ClientSession* clientSession)
+{
+	SSL_free(clientSession->clientSSLConnection);
+	CloseHandle(clientSession->eventHandle);
+	closesocket(clientSession->clientSocket);
+	delete clientSession->sessionTimer;
+	delete clientSession->ip;
+	delete clientSession;
 }
 
 ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip)
