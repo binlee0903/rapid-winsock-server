@@ -1,145 +1,19 @@
 ﻿#include "stdafx.h"
 #include "HttpsServer.h"
 
-HttpsServer* HttpsServer::mServer = nullptr;
 
-//static functions
-HttpsServer* HttpsServer::GetServer()
-{
-	if (mServer == nullptr)
-	{
-		mServer = new HttpsServer();
-	}
+bool HttpsServer::mbIsQuitButtonPressed = false;
+MemoryPool* HttpsServer::mMemoryPool = new MemoryPool();
+HANDLE HttpsServer::mIOCPHandle = NULL;
+socket_t HttpsServer::mHttpsSocket = NULL;
+LPFN_ACCEPTEX HttpsServer::mAcceptEx = nullptr;
+LPFN_GETACCEPTEXSOCKADDRS HttpsServer::mGetAcceptExSockAddrs = nullptr;
+LockFreeQueue<SOCKETINFO*>* HttpsServer::mQueue = new LockFreeQueue<SOCKETINFO*>(MAX_WORK_QUEUE_SIZE);
+std::shared_ptr<spdlog::logger> HttpsServer::mLogger(spdlog::rotating_logger_mt("HttpsServer", "logs/log.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES));
 
-	return mServer;
-}
-
-int32_t HttpsServer::Run()
-{
-	network::OpenSocketOverlappedIOMode(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, true);
-	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, THREAD_COUNT);
-
-	HANDLE eventHandle = WSACreateEvent();
-
-	OVERLAPPED overlapped;
-	ZeroMemory(&overlapped, sizeof(OVERLAPPED));
-
-	overlapped.hEvent = eventHandle;
-	assert(overlapped.hEvent != WSA_INVALID_EVENT);
-
-	eventHandle = nullptr;
-
-	std::string ipAddressBuffer;
-	ipAddressBuffer.reserve(32);
-	socket_t clientSocket = NULL;
-	SSL* ssl = nullptr;
-	sockaddr_in clientSockAddr;
-	ZeroMemory(&clientSockAddr, sizeof(sockaddr));
-
-	CreateThread(nullptr, 0, HttpsServer::checkQuitMessage, nullptr, NULL, nullptr);
-
-	DWORD flags = 0;
-	int ret = 0;
-	int chunkIndex = 0;
-	int chunkSize = WSA_MAXIMUM_WAIT_EVENTS;
-	int size = 0;
-
-	mClientThreadPool->Init(mIOCPHandle);
-
-	while (!mbIsQuitButtonPressed)
-	{
-		clientSocket = network::ProcessAccept(mHttpsSocket, clientSockAddr, ipAddressBuffer);
-		if (clientSocket == NULL)
-		{
-			//mLogger->error("Run() : clientSocket was NULL");
-			continue;
-		}
-
-		SOCKETINFO* socketInfo = new SOCKETINFO();
-		ZeroMemory(socketInfo, sizeof(SOCKETINFO));
-		socketInfo->sendMemoryBlock = GetMemoryBlock();
-		socketInfo->recvMemoryBlock = GetMemoryBlock();
-
-		if (socketInfo->sendMemoryBlock == nullptr || socketInfo->recvMemoryBlock == nullptr)
-		{
-			delete socketInfo;
-			closesocket(mHttpsSocket);
-			continue;
-		}
-
-		CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), mIOCPHandle, clientSocket, THREAD_COUNT); // TODO 마지막 스레드 수 상수로 지정하기
-		ssl = SSL_new(mSSLCTX);
-		SSL_set_accept_state(ssl);
-		socketInfo->socket = clientSocket;
-		socketInfo->pendingCount = 0;
-		socketInfo->isbClosed = false;
-		InitializeSRWLock(&socketInfo->srwLock);
-		socketInfo->session = createClientSession(clientSocket, nullptr, ssl, ipAddressBuffer);
-		socketInfo->recvbytes = 0;
-		socketInfo->sendbytes = 0;
-		socketInfo->sendPendingBytes = 0;
-		socketInfo->recvBuffer.buf = reinterpret_cast<char*>(socketInfo->recvMemoryBlock->ptr);
-		socketInfo->recvBuffer.len = BLOCK_SIZE;
-		socketInfo->sendBuffer.buf = reinterpret_cast<char*>(socketInfo->sendMemoryBlock->ptr);
-		socketInfo->sendBuffer.len = BLOCK_SIZE;
-
-		//mLogger->info("Run() : client connected, ip : {}", socketInfo->session->ip->c_str());
-
-		// SOCKETINFO 구조체의 첫 번째 요소 overlapped를 넘겨줌으로써 나중에 type cast로 나머지 SOCKETINFO 멤버 접속 가능해짐
-		ret = WSARecv(clientSocket, &socketInfo->recvBuffer, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
-		httpHelper::InterLockedIncrement(socketInfo);
-
-		if (ret == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() != ERROR_IO_PENDING)
-			{
-				printSocketError();
-				assert(false);
-			}
-		}
-		continue;
-	}
-
-	delete this;
-	return 0;
-}
-
-MemoryBlock* HttpsServer::GetMemoryBlock()
-{
-	return mMemoryPool->Allocate();
-}
-
-void HttpsServer::PutMemoryBlock(MemoryBlock* memoryBlock)
-{
-	return mMemoryPool->DeAllocate(memoryBlock);
-}
-
-DWORD __stdcall HttpsServer::checkQuitMessage(LPVOID lpParam)
-{
-	char ch = 0;
-
-	while (ch != 'q')
-	{
-		ch = _getch();
-	}
-
-	mServer->mbIsQuitButtonPressed = true;
-
-	return 0;
-}
-
-// common functions
 HttpsServer::HttpsServer()
-	: mbIsQuitButtonPressed(false)
-	, mSessionIDSequence(0)
-	, mMemoryPool(new MemoryPool())
-	, mClientThreadPool(ClientThreadPool::GetInstance(mMemoryPool))
-	, mHttpsSocket(NULL)
-	, mIOCPHandle(NULL)
-	, mLogger(spdlog::rotating_logger_mt("HttpsServer", "logs/log.txt", MAX_LOGGER_SIZE, MAX_LOGGER_FILES))
+	: mSessionIDSequence(0)
 {
-	mServer = this;
-
 	SSL_library_init();
 	OpenSSL_add_ssl_algorithms();
 
@@ -160,6 +34,11 @@ HttpsServer::HttpsServer()
 		std::cout << "Private key does not match the certificate public key\n" << std::endl;
 	}
 
+	for (size_t i = 0; i < THREAD_COUNT; i++)
+	{
+		mThreads[i] = NULL;
+	}
+
 	SSL_CTX_set_mode(mSSLCTX, SSL_MODE_ENABLE_PARTIAL_WRITE);
 
 	mSSL = SSL_new(mSSLCTX);
@@ -176,7 +55,11 @@ HttpsServer::HttpsServer()
 
 HttpsServer::~HttpsServer()
 {
-	delete mClientThreadPool;
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
+	{
+		WaitForSingleObject(mThreads[i], INFINITE);
+	}
+
 	delete mMemoryPool;
 
 	SSL_CTX_free(mSSLCTX);
@@ -197,6 +80,89 @@ HttpsServer::~HttpsServer()
 	assert(result == 0);
 }
 
+int32_t HttpsServer::Start()
+{
+	// IOCP setting part
+	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, THREAD_COUNT);
+	assert(mIOCPHandle != NULL);
+
+	network::OpenSocketOverlappedIOMode(mHttpsSocket, network::HTTPS_PORT_NUMBER, mSSL, &mAcceptEx,
+		&mGetAcceptExSockAddrs, mIOCPHandle, true);
+
+	HANDLE eventHandle = WSACreateEvent();
+	OVERLAPPED overlapped;
+	ZeroMemory(&overlapped, sizeof(OVERLAPPED));
+
+	overlapped.hEvent = eventHandle;
+	assert(overlapped.hEvent != WSA_INVALID_EVENT);
+	// end of iocp setting part
+
+	// temporary variables for client's connection
+	DWORD receivedByteCount = 0;
+	DWORD flags = 0;
+	int32_t ret = 0;
+	std::string ipAddressBuffer;
+	ipAddressBuffer.reserve(32);
+	socket_t clientSocket = NULL;
+	sockaddr_in clientSockAddr;
+	ZeroMemory(&clientSockAddr, sizeof(sockaddr));
+	ClientSession* clientSession;
+	SOCKETINFO* socketInfo;
+	ClientWork::STATUS status;
+
+	// for 'q' command
+	CreateThread(nullptr, 0, HttpsServer::checkQuitMessage, nullptr, NULL, nullptr);
+
+	for (uint32_t i = 0; i < THREAD_COUNT; i++)
+	{
+		mThreads[i] = CreateThread(nullptr, NULL, &HttpsServer::processNetworkIO, nullptr, NULL, nullptr);
+	}
+
+	while (!mbIsQuitButtonPressed)
+	{
+		if (mQueue->pop(socketInfo) == true)
+		{
+			// logic
+			status = ClientWork::ProcessRequest(socketInfo);
+
+
+			// error handling
+
+		}
+		else
+		{
+			// etc logic
+		}
+	}
+
+	return 0;
+}
+
+MemoryBlock* HttpsServer::GetMemoryBlock()
+{
+	return mMemoryPool->Allocate();
+}
+
+void HttpsServer::PutMemoryBlock(MemoryBlock* memoryBlock)
+{
+	return mMemoryPool->DeAllocate(memoryBlock);
+}
+
+DWORD __stdcall HttpsServer::checkQuitMessage(LPVOID lpParam)
+{
+	char ch = 0;
+
+	while (ch != 'q')
+	{
+		scanf_s("%c\n", &ch, 1);
+	}
+
+	mbIsQuitButtonPressed = true;
+
+	return 0;
+}
+
+// common functions
 void HttpsServer::printSocketError()
 {
 	char* msg = nullptr;
@@ -210,28 +176,192 @@ void HttpsServer::printSocketError()
 	LocalFree(msg);
 }
 
-ClientSession* HttpsServer::createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip)
+SOCKETINFO* HttpsServer::createClientSocket()
+{
+	socket_t clientSocket = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+
+	SOCKETINFO* socketInfo = new SOCKETINFO();
+	ZeroMemory(socketInfo, sizeof(SOCKETINFO));
+
+	socketInfo->isbClosed = false;
+	socketInfo->operation = OPERATION::ACCEPT;
+	socketInfo->socket = clientSocket;
+	socketInfo->sendMemoryBlock = GetMemoryBlock();
+	socketInfo->recvMemoryBlock = GetMemoryBlock();
+
+	if (socketInfo->sendMemoryBlock == nullptr && socketInfo->recvMemoryBlock == nullptr)
+	{
+		// handle full client situation
+		delete socketInfo;
+		closesocket(mHttpsSocket);
+
+		return nullptr;
+	}
+
+	return socketInfo;
+}
+
+void HttpsServer::postAccept(SOCKETINFO** socketInfo, int8_t* buffer)
+{
+	*socketInfo = createClientSocket();
+
+	if (*socketInfo == nullptr)
+	{
+		return;
+	}
+
+	int32_t result = mAcceptEx(
+		mHttpsSocket,
+		(*socketInfo)->socket,
+		buffer,
+		0,
+		sizeof(sockaddr_in) + 16,
+		sizeof(sockaddr_in) + 16,
+		0,
+		&(*socketInfo)->overlapped
+	);
+
+	if (result == FALSE) {
+		int error = WSAGetLastError();
+		assert(error == WSA_IO_PENDING);
+		// WSA_IO_PENDING은 비동기 작업이 성공적으로 시작되었다는 의미
+	}
+}
+
+DWORD __stdcall HttpsServer::processNetworkIO(LPVOID lpParam)
+{
+	int8_t outputBuffer[RECV_DATA_LENGTH + ADDR_BUF_SIZE * 2];
+	socket_t clientSocket = NULL;
+	DWORD processedByteCount = 0;
+	DWORD flags = 0;
+	int ret = 0;
+
+	HANDLE iocp;
+	SOCKETINFO* socketInfo;
+	sockaddr_in* localAddr = new sockaddr_in();
+	sockaddr_in* remoteAddr = new sockaddr_in();
+	int localAddrLen = sizeof(sockaddr_in);
+	int remoteAddrLen = sizeof(sockaddr_in);
+
+	postAccept(&socketInfo, outputBuffer);
+
+	while (true) // need to make goal
+	{
+		ret = GetQueuedCompletionStatus(mIOCPHandle, &processedByteCount, &clientSocket,
+			reinterpret_cast<LPOVERLAPPED*>(&socketInfo), WSA_INFINITE);
+
+		if (ret == 0)
+		{
+			ret = WSAGetLastError();
+
+			assert(ret == ERROR_IO_PENDING);
+		}
+
+		if (socketInfo->operation == OPERATION::RECV && processedByteCount == 0 && socketInfo->pendingCount == 0)
+		{
+			// FIN
+			mMemoryPool->DeAllocate(socketInfo->recvMemoryBlock);
+			mMemoryPool->DeAllocate(socketInfo->sendMemoryBlock);
+			ClientWork::CloseConnection(socketInfo);
+			continue;
+		}
+
+		switch (socketInfo->operation)
+		{
+		case OPERATION::ACCEPT:
+			// do accept
+			iocp = CreateIoCompletionPort((HANDLE)socketInfo->socket, mIOCPHandle, (u_long)0, 0);
+
+			if (iocp == NULL)
+			{
+				// Failed to associate with iocp
+				delete socketInfo;
+				printf("CreateIoCompletionPort associate failed with error: %u\n", GetLastError());
+				closesocket(socketInfo->socket);
+				return -1;
+			}
+
+			mGetAcceptExSockAddrs(
+				outputBuffer,
+				RECV_DATA_LENGTH,
+				ADDR_BUF_SIZE,
+				ADDR_BUF_SIZE,
+				(LPSOCKADDR*)&localAddr,
+				&localAddrLen,
+				(LPSOCKADDR*)&remoteAddr,
+				&remoteAddrLen
+			);
+
+			socketInfo->session->ip = new std::string(inet_ntoa(remoteAddr->sin_addr));
+			socketInfo->session->ip->append("/");
+			socketInfo->session->ip->append(std::to_string(remoteAddr->sin_port));
+
+			mLogger->info("Run() : client connected, ip : {}", socketInfo->session->ip->c_str());
+			socketInfo->session = new ClientSession();
+
+			// call recv
+			ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, &processedByteCount, &flags, &socketInfo->overlapped, nullptr);
+
+			// wokers should not know about http thing, like datas in IOCP
+			if (ret == 0)
+			{
+				ret = PostQueuedCompletionStatus(mIOCPHandle, processedByteCount, socketInfo->socket, &socketInfo->overlapped);
+				if (ret == SOCKET_ERROR)
+				{
+					ret = WSAGetLastError();
+				}
+			}
+
+			// later, prepare another accept
+			postAccept(&socketInfo, outputBuffer);
+			break;
+
+		default:
+
+
+			mQueue->push(socketInfo);
+			break;
+		}
+
+		// test this later
+		//if (socketInfo->sendPendingBytes != processedByteCount)
+		//{
+		//	// recv
+		//	socketInfo->recvbytes = processedByteCount;
+
+		//	ret = ClientWork::ProcessRequest(socketInfo);
+		//	mQueue->push(socketInfo);
+		//}
+		//else
+		//{
+		//	// send result
+		//}
+	}
+
+	delete localAddr;
+	delete remoteAddr;
+
+	return 0;
+}
+
+ClientSession* HttpsServer::createClientSession(socket_t clientSocket, std::string& ip)
 {
 	ClientSession* clientSession = new ClientSession();
 	clientSession->sessionID = mSessionIDSequence++;
-	clientSession->processingCount = 0;
-	InitializeSRWLock(&clientSession->lock);
-	clientSession->clientSocket = clientSocket;
-	clientSession->eventHandle = clientEventHandle;
 	clientSession->httpObject = new HttpObject();
-	clientSession->clientSSLConnection = clientSSL;
-	clientSession->clientSSLReadBIO = BIO_new(BIO_s_mem());
-	clientSession->clientSSLWriteBIO = BIO_new(BIO_s_mem());
-	clientSession->currentOperation = OPERATION::RECEIVE;
-	BIO_set_nbio(clientSession->clientSSLReadBIO, 1);
-	SSL_set_bio(clientSSL, clientSession->clientSSLReadBIO, clientSession->clientSSLWriteBIO);
-	SSL_set_accept_state(clientSession->clientSSLConnection);
-
+	clientSession->clientSSLConnection = SSL_new(mSSLCTX);
 	clientSession->sessionTimer = new SessionTimer();
 	clientSession->ip = new std::string(ip);
 	clientSession->bIsSSLRetryConnection = false;
 	clientSession->bIsSSLConnected = false;
-	clientSession->bIsDisconnected = false;
 
 	return clientSession;
+}
+
+void HttpsServer::destroyClientSession(ClientSession* clientSession)
+{
+	delete clientSession->httpObject;
+	delete clientSession->sessionTimer;
+	delete clientSession->ip;
+	delete clientSession;
 }

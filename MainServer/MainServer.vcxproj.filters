@@ -164,6 +164,9 @@
     <ClCompile Include="MemoryPool.cpp">
       <Filter>Source\memory</Filter>
     </ClCompile>
+    <ClCompile Include="LockFreeQueue.cpp">
+      <Filter>Source\threadPool</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpFileContainer.h">
@@ -246,6 +249,15 @@
     </ClInclude>
     <ClInclude Include="MemoryPool.h">
       <Filter>Header\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="LockFreeQueue.h">
+      <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="EventQueue.h">
+      <Filter>Header\threadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="Message.h">
+      <Filter>Header\threadPool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

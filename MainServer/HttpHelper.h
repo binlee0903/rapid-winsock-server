@@ -6,9 +6,6 @@ namespace httpHelper
 	constexpr uint32_t BASIC_SSL_CHUNK_SIZE = 16384;
 
 	void WriteHttpsResponseToSSL(SOCKETINFO* httpObject);
-	void InterLockedIncrement(SOCKETINFO* socketInfo);
-	void InterLockedDecrement(SOCKETINFO* socketInfo);
 
-	void CreateHttpResponse(HttpObject* httpObject, int8_t** response);
 	bool PrepareResponse(HttpObject* httpObject, std::string& buffer);
 }

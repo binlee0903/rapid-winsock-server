@@ -19,11 +19,14 @@ constexpr char SERVER_CERT_FILE[] = "C:\\Users\\egb3543\\Documents\\server-cert\
 constexpr char SERVER_KEY_FILE[] = "C:\\Users\\egb3543\\Documents\\server-cert\\binlee-blog.com_20240206F089A.key.pem";
 #endif
 
-constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1000; // max clients count
+constexpr uint16_t MAX_WORK_QUEUE_SIZE = 1024;
+constexpr uint16_t MAX_CLIENT_CONNECTION_COUNT = 1024; // max clients count
 constexpr uint16_t HTTP_PORT_NUMBER = 80;
 constexpr uint16_t HTTPS_PORT_NUMBER = 443;
 constexpr uint32_t MAX_LOGGER_SIZE = 1048576; // 1MB
 constexpr uint32_t MAX_LOGGER_FILES = 5;
+constexpr uint32_t RECV_DATA_LENGTH = 0;
+constexpr uint32_t ADDR_BUF_SIZE = (sizeof(sockaddr_in) + 16);
 
 #ifdef   _DEBUG
 #define  SET_CRT_DEBUG_FIELD(a) \
@@ -38,47 +41,52 @@ constexpr uint32_t MAX_LOGGER_FILES = 5;
 class HttpsServer final
 {
 public:
-	/**
-	 * return https server's pointer, if server is not constructed, creates it
-	 *
-	 * @return https server's pointer
-	 */
-	static HttpsServer* GetServer();
+	enum THREAD_EVENT
+	{
+		THREAD_SIGNAL,
+		THREAD_CLOSE
+	};
 
+public:
+	HttpsServer();
+	~HttpsServer();
 	/**
 	 * if this function is called, server will start listen
 	 *
 	 * @return 0 when q is pressed in console, but if this function return -1, there was an error
 	 */
-	int32_t Run();
+	int32_t Start();
 
-	MemoryBlock* GetMemoryBlock();
-	void PutMemoryBlock(MemoryBlock* memoryBlock);
+	static MemoryBlock* GetMemoryBlock();
+	static void PutMemoryBlock(MemoryBlock* memoryBlock);
 private:
 	static DWORD __stdcall checkQuitMessage(LPVOID lpParam);
 private:
-	HttpsServer();
-	~HttpsServer();
-
 	void printSocketError();
 	//void invalidateSession();
 	//void eraseClient(uint32_t index);
 
-	ClientSession* createClientSession(socket_t clientSocket, HANDLE clientEventHandle, SSL* clientSSL, std::string& ip);
+	static SOCKETINFO* createClientSocket();
+	static void postAccept(SOCKETINFO** socketInfo, int8_t* buffer);
+	static DWORD __stdcall processNetworkIO(LPVOID lpParam);
+	static void destroyClientSession(ClientSession* clientSession);
+
+	ClientSession* createClientSession(socket_t clientSocket, std::string& ip);
 private:
-	static HttpsServer* mServer;
+	static bool mbIsQuitButtonPressed;
+	static HANDLE mIOCPHandle;
+	static socket_t mHttpsSocket;
+	static LPFN_ACCEPTEX mAcceptEx;
+	static LPFN_GETACCEPTEXSOCKADDRS mGetAcceptExSockAddrs;
+	static MemoryPool* mMemoryPool;
+	static LockFreeQueue<SOCKETINFO*>* mQueue;
+	static std::shared_ptr<spdlog::logger> mLogger;
 
-	bool mbIsQuitButtonPressed;
 	uint32_t mSessionIDSequence;
-
-	socket_t mHttpsSocket;
-	HANDLE mIOCPHandle;
 	
-	MemoryPool* mMemoryPool;
-	ClientThreadPool* mClientThreadPool;
+	HANDLE mThreads[THREAD_COUNT];
+	
 	SSL* mSSL;
 	SSL_CTX* mSSLCTX;
-
-	std::shared_ptr<spdlog::logger> mLogger;
 };
 

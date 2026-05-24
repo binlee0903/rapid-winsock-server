@@ -8,25 +8,17 @@ ClientThreadPool::ClientThreadPool(MemoryPool* memoryPool)
 	: mThreads(new HANDLE[THREAD_COUNT])
 	, mSRWLock()
 	, mMemoryPool(memoryPool)
-	, mEventHandles(new HANDLE[THREAD_EVENT_COUNT])
-	, mThreadRunningCount(0)
 {
 	InitializeSRWLock(&mSRWLock);
 }
 
 ClientThreadPool::~ClientThreadPool()
 {
-	for (uint32_t i = 0; i < THREAD_EVENT_COUNT; i++)
-	{
-		CloseHandle(mEventHandles[i]);
-	}
-
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
 		WaitForSingleObject(mThreads[i], INFINITE);
 	}
 
-	delete[] mEventHandles;
 	delete[] mThreads;
 }
 
@@ -53,7 +45,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 	while (true)
 	{
 		ret = GetQueuedCompletionStatus(mIOCPHandle, &receivedByteCount, &clientSocket, reinterpret_cast<LPOVERLAPPED*>(&socketInfo), WSA_INFINITE);
-		httpHelper::InterLockedDecrement(socketInfo);
 
 		if (ret == 0)
 		{
@@ -92,7 +83,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 				case ClientWork::STATUS::HTTPS_CLIENT_NO_AVAILABLE_DATA:
 					ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, &receivedByteCount, &flags, &socketInfo->overlapped, nullptr);
-					httpHelper::InterLockedIncrement(socketInfo);
 
 					if (ret == 0)
 					{
@@ -116,7 +106,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 				case ClientWork::STATUS::HTTPS_CLIENT_WANT_READ_DATA:
 					ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, &receivedByteCount, &flags, &socketInfo->overlapped, nullptr);
-					httpHelper::InterLockedIncrement(socketInfo);
 
 					if (ret == 0)
 					{
@@ -160,7 +149,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 
 				case ClientWork::STATUS::HTTPS_CLIENT_OK:
 					ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
-					httpHelper::InterLockedIncrement(socketInfo);
 
 					if (ret == 0)
 					{
@@ -187,7 +175,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 					if (socketInfo->sendbytes == 0)
 					{
 						ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, nullptr, &flags, &socketInfo->overlapped, nullptr);
-						httpHelper::InterLockedIncrement(socketInfo);
 
 						if (ret == 0)
 						{
@@ -228,8 +215,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 						socketInfo->sendbytes = 0;
 
 						ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, &receivedByteCount, &flags, &socketInfo->overlapped, nullptr);
-						socketInfo->session->currentOperation = OPERATION::RECEIVE;
-						httpHelper::InterLockedIncrement(socketInfo);
 
 						if (ret == 0)
 						{
@@ -255,7 +240,6 @@ DWORD __stdcall ClientThreadPool::Run(LPVOID lpParam)
 				{
 					std::cout << "Send" << std::endl;
 					ret = WSARecv(socketInfo->socket, &socketInfo->recvBuffer, 1, &receivedByteCount, &flags, &socketInfo->overlapped, nullptr);
-					httpHelper::InterLockedIncrement(socketInfo);
 
 					if (ret == 0)
 					{

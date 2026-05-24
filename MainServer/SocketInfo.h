@@ -3,9 +3,10 @@
 struct SOCKETINFO
 {
 	OVERLAPPED overlapped;
+
+	OPERATION operation;
 	uint64_t pendingCount;
 	bool isbClosed;
-	SRWLOCK srwLock;
 	SOCKET socket;
 	MemoryBlock* sendMemoryBlock;
 	MemoryBlock* recvMemoryBlock;

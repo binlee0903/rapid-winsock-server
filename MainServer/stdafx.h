@@ -1,5 +1,7 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include <Windows.h>
 #include <cstdlib>
 #include <cstdint>
@@ -9,6 +11,7 @@
 
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <MSWSock.h>
 
 #include <list>
 #include <vector>
@@ -19,6 +22,7 @@
 #include <process.h>
 #include <synchapi.h>
 
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -34,12 +38,15 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
+#include "Message.h"
+#include "LockFreeQueue.h"
 #include "json.h"
 #include "DebugHelper.h"
 #include "Hash.h"
 #include "HttpObject.h"
 #include "SessionTimer.h"
 #include "ClientSession.h"
+#include "ThreadSafeQueue.h"
 #include "MemoryPool.h"
 #include "SocketInfo.h"
 #include "Service.h"

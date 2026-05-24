@@ -4,15 +4,12 @@
 
 void httpHelper::WriteHttpsResponseToSSL(SOCKETINFO* socketInfo)
 {
-	static HttpRouter* httpRouter = HttpRouter::GetRouter();
+	static HttpResponseGenerator* httpRouter = HttpResponseGenerator::GetRouter();
 
-	std::vector<int8_t> plainResponse;
-	plainResponse.reserve(BLOCK_SIZE);
-
-	httpRouter->Route(socketInfo->session->httpObject, plainResponse);
+	int8_t* plainResponse; // TODO: make Object Pool
 
 	int32_t sslErrorCode = 0;
-	size_t responseSize = plainResponse.size();
+	size_t responseSize = httpRouter->Generate(socketInfo->session->httpObject, &plainResponse);
 	size_t chunkCount = (responseSize / BASIC_SSL_CHUNK_SIZE) + 1;
 	size_t WroteSize = 0;
 	size_t wroteSizeToSSL = 0;
@@ -42,21 +39,6 @@ void httpHelper::WriteHttpsResponseToSSL(SOCKETINFO* socketInfo)
 	socketInfo->sentbytes = 0;
 	socketInfo->sendbytes = BIO_pending(socketInfo->session->clientSSLWriteBIO);
 }
-
-void httpHelper::InterLockedIncrement(SOCKETINFO* socketInfo)
-{
-	AcquireSRWLockExclusive(&socketInfo->srwLock);
-	socketInfo->pendingCount++;
-	ReleaseSRWLockExclusive(&socketInfo->srwLock);
-}
-
-void httpHelper::InterLockedDecrement(SOCKETINFO* socketInfo)
-{
-	AcquireSRWLockExclusive(&socketInfo->srwLock);
-	socketInfo->pendingCount--;
-	ReleaseSRWLockExclusive(&socketInfo->srwLock);
-}
-
 
 bool httpHelper::PrepareResponse(HttpObject* httpObject, std::string& buffer)
 {

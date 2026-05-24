@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ClientWork.h"
-#include "ThreadSafeQueue.h"
 
 constexpr uint32_t THREAD_COUNT = 1;
 constexpr uint32_t EVENT_COUNT = 2;

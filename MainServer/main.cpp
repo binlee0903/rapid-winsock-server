@@ -20,19 +20,21 @@ int32_t main()
 	SET_CRT_DEBUG_FIELD(_CRTDBG_LEAK_CHECK_DF);
 	//_CrtSetAllocHook(YourAllocHook);
 	SetUnhandledExceptionFilter(CrashHandlerThatCreateDumpFileCallBack);
-	HttpsServer* server = HttpsServer::GetServer();
+	HttpsServer* server = new HttpsServer();
 	HttpServer::Run();
 
 	int ret = 0;
 
 	try {
-		ret = server->Run();
+		ret = server->Start();
 	}
 	catch (const spdlog::spdlog_ex& ex) {
 		std::cout << "Log init failed: " << ex.what() << std::endl;
 		std::cout << "Waiting..." << std::endl;
 		std::cin >> ret;
 	}
+
+	delete server;
 
 	_CrtDumpMemoryLeaks();
 

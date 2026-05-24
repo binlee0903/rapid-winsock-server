@@ -11,7 +11,7 @@ namespace network
 	constexpr uint16_t TIME_OUT = 3000;
 
 	void OpenSocket(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket);
-	void OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket);
+	void OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, LPFN_ACCEPTEX* lpfnAcceptEx_out, LPFN_GETACCEPTEXSOCKADDRS* lpfnGetAcceptExSockaddrs, HANDLE iocpHandle, bool isbSecureSocket);
 	void ProcessRedirect(socket_t targetSocket);
 
 	socket_t ProcessAccept(socket_t socket, sockaddr_in sockaddrIn, std::string& address);

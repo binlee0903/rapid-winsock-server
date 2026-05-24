@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "network.h"
 
+// for blocking socket
 network::socket_t network::ProcessAccept(network::socket_t socket, sockaddr_in sockaddrIn, std::string& address)
 {
 	socket_t clientSocket = 0;
-	int* size = new int(sizeof(sockaddr_in));
+	int size = sizeof(sockaddr_in);
 
-	clientSocket = WSAAccept(socket, reinterpret_cast<sockaddr*>(&sockaddrIn), size, NULL, NULL);
+	clientSocket = WSAAccept(socket, reinterpret_cast<sockaddr*>(&sockaddrIn), &size, NULL, NULL);
 
 	if (clientSocket == INVALID_SOCKET)
 	{
@@ -25,8 +26,7 @@ network::socket_t network::ProcessAccept(network::socket_t socket, sockaddr_in s
 	is << "/";
 	is << sockaddrIn.sin_port;
 
-	address = is.str();
-	delete size;
+	address.append(is.str());
 
 	return clientSocket;
 }
@@ -58,7 +58,7 @@ void network::OpenSocket(network::socket_t& targetSocket, uint16_t portNumber, S
 	assert(returnValue != SOCKET_ERROR);
 }
 
-void network::OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, bool isbSecureSocket)
+void network::OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNumber, SSL* ssl, LPFN_ACCEPTEX* lpfnAcceptEx_out, LPFN_GETACCEPTEXSOCKADDRS* lpfnGetAcceptExSockaddrs, HANDLE iocpHandle, bool isbSecureSocket)
 {
 	targetSocket = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	assert(targetSocket != INVALID_SOCKET);
@@ -69,8 +69,17 @@ void network::OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNu
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddr.sin_port = htons(portNumber);
 
-	const DWORD optValue = 1; // true
+	const uint32_t optValue = 1; // true
+	uint32_t ioctlOptValue = 1; // true
 	setsockopt(targetSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&optValue), sizeof(optValue));
+
+	if (ioctlsocket(targetSocket, FIONBIO, reinterpret_cast<u_long*>(&ioctlOptValue)) == SOCKET_ERROR)
+	{
+		std::cout << "Socket Creation Error\n";
+		return;
+	}
+
+	CreateIoCompletionPort((HANDLE)targetSocket, iocpHandle, (u_long)0, 0);
 
 	if (isbSecureSocket == true)
 	{
@@ -82,6 +91,37 @@ void network::OpenSocketOverlappedIOMode(socket_t& targetSocket, uint16_t portNu
 	assert(returnValue != SOCKET_ERROR);
 
 	returnValue = listen(targetSocket, MAX_CLIENT_CONNECTION_COUNT);
+	assert(returnValue != SOCKET_ERROR);
+
+	DWORD bytes = 0;
+	GUID GuidAcceptEx = WSAID_ACCEPTEX;
+	GUID GuidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
+
+	// get AcceptEx function pointer
+	returnValue = WSAIoctl(
+		targetSocket,
+		SIO_GET_EXTENSION_FUNCTION_POINTER,
+		&GuidAcceptEx,
+		sizeof(GuidAcceptEx),
+		lpfnAcceptEx_out,
+		sizeof(LPFN_ACCEPTEX),
+		&bytes,
+		nullptr,
+		nullptr
+	);
+	assert(returnValue != SOCKET_ERROR);
+
+	returnValue = WSAIoctl(
+		targetSocket,
+		SIO_GET_EXTENSION_FUNCTION_POINTER,
+		&GuidGetAcceptExSockaddrs,
+		sizeof(GuidGetAcceptExSockaddrs),
+		lpfnGetAcceptExSockaddrs,
+		sizeof(lpfnGetAcceptExSockaddrs),
+		&bytes,
+		nullptr,
+		nullptr
+	);
 	assert(returnValue != SOCKET_ERROR);
 }
 

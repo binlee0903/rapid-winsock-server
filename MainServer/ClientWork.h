@@ -31,8 +31,6 @@ namespace ClientWork
 		HTTPS_CLIENT_INVALID_HTTP_HEADER,
 	};
 
-	bool IsProcessing(SOCKETINFO* socketInfo);
-
 	int ProcessSSLHandshake(SOCKETINFO* socketInfo);
 
 	/**
@@ -52,7 +50,7 @@ namespace ClientWork
 	void CloseConnection(SOCKETINFO* socketInfo);
 
 	STATUS SendHttpResponse(SOCKETINFO* socketInfo);
-	uint64_t ReceiveData(SOCKETINFO* socketInfo, std::string* content);
+	uint64_t ReceiveData(SOCKETINFO* socketInfo, std::string& content);
 	uint64_t GetRecordSize(const SOCKETINFO* socketInfo);
 	void RemoveData(const SOCKETINFO* socketInfo, uint64_t recordSize);
 	bool IsChangeCipherRecord(const SOCKETINFO* socketInfo);

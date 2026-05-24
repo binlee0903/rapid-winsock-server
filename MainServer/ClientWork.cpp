@@ -1,11 +1,6 @@
 ﻿#include "stdafx.h"
 #include "ClientWork.h"
 
-bool ClientWork::IsProcessing(SOCKETINFO* socketInfo)
-{
-	return socketInfo->session->processingCount > 0;
-}
-
 int ClientWork::ProcessSSLHandshake(SOCKETINFO* socketInfo)
 {
 	int retCode = 0;
@@ -50,7 +45,6 @@ int ClientWork::ProcessSSLHandshake(SOCKETINFO* socketInfo)
 		socketInfo->sendBuffer.len = count;
 		socketInfo->sendPendingBytes = pending;
 		ret = WSASend(socketInfo->socket, &socketInfo->sendBuffer, 1, 0, 0, &socketInfo->overlapped, nullptr);
-		httpHelper::InterLockedIncrement(socketInfo);
 
 		if (ret == SOCKET_ERROR)
 		{
@@ -118,7 +112,6 @@ ClientWork::STATUS ClientWork::ProcessRequest(SOCKETINFO* socketInfo)
 			return STATUS::HTTPS_CLIENT_SSL_HANDSHAKE;
 
 		case 0:
-			std::cout << "SSL connection" << std::endl;
 			return STATUS::HTTPS_CLIENT_WANT_READ_DATA;
 
 		default:
@@ -129,7 +122,7 @@ ClientWork::STATUS ClientWork::ProcessRequest(SOCKETINFO* socketInfo)
 	std::string buffer;
 	buffer.reserve(BUFFER_SIZE * 2);
 
-	int errorCode = ReceiveData(socketInfo, &buffer);
+	int errorCode = ReceiveData(socketInfo, buffer);
 
 	if (errorCode == SSL_ERROR_WANT_READ)
 	{
@@ -179,9 +172,7 @@ ClientWork::STATUS ClientWork::SendHttpResponse(SOCKETINFO* socketInfo)
 	}
 
 	socketInfo->sendBuffer.len = pendingBytes;
-	socketInfo->session->currentOperation = OPERATION::SEND;
 	ret = WSASend(socketInfo->socket, &socketInfo->sendBuffer, 1, 0, 0, &socketInfo->overlapped, nullptr); //
-	httpHelper::InterLockedIncrement(socketInfo);
 	socketInfo->sendPendingBytes = pendingBytes;
 
 	if (ret == SOCKET_ERROR)
@@ -190,7 +181,6 @@ ClientWork::STATUS ClientWork::SendHttpResponse(SOCKETINFO* socketInfo)
 
 		if (ret != WSA_IO_PENDING)
 		{
-			httpHelper::InterLockedDecrement(socketInfo);
 			socketInfo->isbClosed = true;
 			return STATUS::HTTPS_CLIENT_ERROR;
 		}
@@ -211,21 +201,20 @@ ClientWork::STATUS ClientWork::SendHttpResponse(SOCKETINFO* socketInfo)
 
 void ClientWork::CloseConnection(SOCKETINFO* socketInfo)
 {
-	socketInfo->session->bIsDisconnected = true;
 	delete socketInfo->session->ip;
 	delete socketInfo->session->sessionTimer;
 	delete socketInfo->session->httpObject;
 	SSL_shutdown(socketInfo->session->clientSSLConnection);
 	SSL_free(socketInfo->session->clientSSLConnection);
-	shutdown(socketInfo->session->clientSocket, SD_BOTH);
-	closesocket(socketInfo->session->clientSocket);
+	shutdown(socketInfo->socket, SD_BOTH);
+	closesocket(socketInfo->socket);
 	socketInfo->recvMemoryBlock = nullptr;
 	socketInfo->sendMemoryBlock = nullptr;
 	delete socketInfo->session;
 	delete socketInfo;
 }
 
-uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
+uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string& content)
 {
 	uint8_t buffer[BUFFER_SIZE];
 	char errorBuffer[BUFFER_SIZE];
@@ -258,6 +247,7 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 		}
 	}
 
+	// refine error code return
 	do
 	{
 		ERR_clear_error();
@@ -271,7 +261,7 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 			switch (sslErrorCode)
 			{
 			case SSL_ERROR_WANT_READ:
-				return SSL_ERROR_WANT_READ;
+				return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 
 			case SSL_ERROR_ZERO_RETURN:
 				return SSL_ERROR_ZERO_RETURN;
@@ -279,24 +269,24 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 			case SSL_ERROR_SYSCALL:
 				ERR_error_string_n(sslErrorCode, errorBuffer, BUFFER_SIZE);
 				std::cout << errorBuffer << std::endl;
-				return SSL_ERROR_WANT_READ;
+				return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 
 			case SSL_ERROR_SSL:
 				ERR_error_string_n(sslErrorCode, errorBuffer, BUFFER_SIZE);
 				std::cout << errorBuffer << std::endl;
-				return SSL_ERROR_WANT_READ;
+				return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 			}
 		}
 
 		if (sslErrorCode <= 0)
 		{
-			sslErrorCode = SSL_get_error(mClientSession->clientSSLConnection, sslErrorCode);
+			sslErrorCode = SSL_get_error(socketInfo->session->clientSSLConnection, sslErrorCode);
 
 			if (sslErrorCode == SSL_ERROR_ZERO_RETURN)
 			{
-				shutdown(mClientSession->clientSocket, SD_SEND);
-				SSL_shutdown(mClientSession->clientSSLConnection);
-				return HTTPS_CLIENT_ZERO_RETURN;
+				shutdown(socketInfo->socket, SD_SEND);
+				SSL_shutdown(socketInfo->session->clientSSLConnection);
+				return HTTPS_CLIENT_NO_AVAILABLE_DATA;
 			}
 
 			if (sslErrorCode == SSL_ERROR_WANT_READ)
@@ -306,9 +296,6 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 
 			if (sslErrorCode != SSL_ERROR_NONE)
 			{
-				AcquireSRWLockExclusive(&mSRWLock);
-				std::cout << "ssl read failed, error Code : " << sslErrorCode << std::endl;
-				ReleaseSRWLockExclusive(&mSRWLock);
 				return HTTPS_CLIENT_ERROR;
 			}
 		}
@@ -318,7 +305,7 @@ uint64_t ClientWork::ReceiveData(SOCKETINFO* socketInfo, std::string* content)
 			{
 				for (uint32_t i = 0; i < receivedDataLength; ++i)
 				{
-					content->push_back(buffer[i]);
+					content.push_back(buffer[i]);
 				}
 
 				recvLenSum += receivedDataLength;
